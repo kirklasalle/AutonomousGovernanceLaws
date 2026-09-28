@@ -1,0 +1,45 @@
+# ─── Python ───
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+*.whl
+.venv/
+venv/
+env/
+
+# ─── Node / TypeScript ───
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── Rust ───
+target/
+Cargo.lock
+
+# ─── IDE ───
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Governance Runtime ───
+.ledger/
+.halt
+*.pem
+*.sig
+config/policy_registry.sig
+
+# ─── OS ───
+*.tmp
+*.bak
+*.log

@@ -1,0 +1,43 @@
+name: Governance CI & Invariant Verification
+
+on:
+  push:
+    branches: [ main, master, release/* ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  verify-charter-and-test:
+    name: Charter Verification & Invariant Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,crypto]"
+
+      - name: 1. Verify Charter Digest Pinning (LAW10-CHARTER)
+        run: |
+          python scripts/verify_charter.py
+
+      - name: 2. Run Invariant Test Suite (pytest)
+        run: |
+          pytest tests/ -v --cov=autonomous_governance
+
+      - name: 3. Verify CLI commands
+        run: |
+          agy-governance status
+          agy-governance verify

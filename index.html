@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autonomous Governance Laws — Constitutional AI Runtime & Explorer</title>
+<meta name="description" content="Autonomous Governance Laws — A cryptographically enforced constitutional framework for autonomous intelligence systems authored by Kirk LaSalle.">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-base: #08080c;
+    --bg-card: rgba(255, 255, 255, 0.03);
+    --bg-glass: rgba(255, 255, 255, 0.05);
+    --border-glass: rgba(255, 255, 255, 0.08);
+    --border-hover: rgba(79, 143, 255, 0.3);
+    --text-main: #f0f0f5;
+    --text-muted: #88889c;
+    --text-faint: #555566;
+    --accent-blue: #4f8fff;
+    --accent-purple: #8b5cf6;
+    --accent-teal: #14b8a6;
+    --accent-emerald: #10b981;
+    --accent-rose: #f43f5e;
+    --accent-amber: #f59e0b;
+    --gradient-hero: linear-gradient(135deg, #4f8fff 0%, #8b5cf6 50%, #14b8a6 100%);
+    --shadow-glow: 0 0 50px rgba(79, 143, 255, 0.12);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-base);
+    color: var(--text-main);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ─── AMBIENT GLOW ─── */
+  .ambient-container {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .glow-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.25;
+  }
+  .orb-1 { width: 500px; height: 500px; background: var(--accent-blue); top: -100px; right: -50px; }
+  .orb-2 { width: 450px; height: 450px; background: var(--accent-purple); top: 40%; left: -100px; }
+  .orb-3 { width: 400px; height: 400px; background: var(--accent-teal); bottom: -100px; right: 20%; }
+
+  /* ─── LAYOUT ─── */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ─── HEADER / NAV ─── */
+  header {
+    padding: 24px 0;
+    border-bottom: 1px solid var(--border-glass);
+    backdrop-filter: blur(16px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(8, 8, 12, 0.75);
+  }
+  .nav-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .logo {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--text-main);
+  }
+  .logo-badge {
+    font-size: 0.65rem;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(79, 143, 255, 0.15);
+    color: var(--accent-blue);
+    font-weight: 700;
+    border: 1px solid rgba(79, 143, 255, 0.3);
+  }
+  .nav-links {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+  .nav-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 500;
+    transition: var(--transition);
+  }
+  .nav-link:hover {
+    color: var(--text-main);
+  }
+  .nav-btn {
+    background: var(--gradient-hero);
+    color: white;
+    padding: 8px 18px;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    box-shadow: 0 4px 14px rgba(79, 143, 255, 0.25);
+    transition: var(--transition);
+  }
+  .nav-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(79, 143, 255, 0.4);
+  }
+
+  /* ─── HERO SECTION ─── */
+  .hero {
+    padding: 90px 0 60px;
+    text-align: center;
+  }
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent-teal);
+    background: rgba(20, 184, 166, 0.1);
+    padding: 6px 16px;
+    border-radius: 50px;
+    border: 1px solid rgba(20, 184, 166, 0.25);
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-size: 3.5rem;
+    font-weight: 900;
+    line-height: 1.12;
+    letter-spacing: -0.035em;
+    margin-bottom: 20px;
+  }
+  .gradient-text {
+    background: var(--gradient-hero);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    max-width: 780px;
+    margin: 0 auto 36px;
+    line-height: 1.6;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .btn-primary {
+    background: var(--gradient-hero);
+    color: white;
+    padding: 14px 28px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: var(--transition);
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(139, 92, 246, 0.5);
+  }
+  .btn-secondary {
+    background: var(--bg-glass);
+    color: var(--text-main);
+    border: 1px solid var(--border-glass);
+    padding: 14px 28px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    backdrop-filter: blur(10px);
+    transition: var(--transition);
+  }
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+  }
+
+  /* ─── QUICK METRICS ─── */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin: 40px 0 80px;
+  }
+  .metric-card {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius);
+    padding: 24px;
+    text-align: center;
+    backdrop-filter: blur(12px);
+    transition: var(--transition);
+  }
+  .metric-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-4px);
+  }
+  .metric-val {
+    font-size: 2.2rem;
+    font-weight: 900;
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 6px;
+  }
+  .metric-desc {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* ─── SECTION TITLES ─── */
+  .section-head {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .section-tag {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent-blue);
+    margin-bottom: 8px;
+  }
+  .section-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+  .section-sub {
+    font-size: 1rem;
+    color: var(--text-muted);
+    max-width: 650px;
+    margin: 0 auto;
+  }
+
+  /* ─── 10 LAWS EXPLORER ─── */
+  .laws-explorer {
+    margin-bottom: 100px;
+  }
+  .filter-tabs {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .tab-btn {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    color: var(--text-muted);
+    padding: 8px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .tab-btn.active, .tab-btn:hover {
+    background: rgba(79, 143, 255, 0.15);
+    border-color: var(--accent-blue);
+    color: var(--text-main);
+  }
+  .laws-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+  }
+  .law-card {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius);
+    padding: 24px;
+    backdrop-filter: blur(10px);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+  }
+  .law-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px; height: 100%;
+    background: var(--accent-blue);
+    opacity: 0.7;
+  }
+  .law-card.societal::before { background: var(--accent-purple); }
+  .law-card.containment::before { background: var(--accent-teal); }
+
+  .law-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-glow);
+  }
+  .law-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .law-num-badge {
+    font-size: 0.75rem;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .law-tag {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .tag-physical { background: rgba(79, 143, 255, 0.15); color: #4f8fff; }
+  .tag-societal { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+  .tag-containment { background: rgba(20, 184, 166, 0.15); color: #14b8a6; }
+
+  .law-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .law-body {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* ─── RUNTIME SIMULATOR ─── */
+  .sim-section {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius);
+    padding: 40px;
+    margin-bottom: 100px;
+    backdrop-filter: blur(12px);
+  }
+  .sim-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-top: 28px;
+  }
+  .sim-control label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .sim-select, .sim-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-glass);
+    color: var(--text-main);
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+    outline: none;
+    transition: var(--transition);
+  }
+  .sim-select:focus, .sim-input:focus {
+    border-color: var(--accent-blue);
+  }
+  .sim-btn {
+    width: 100%;
+    background: var(--gradient-hero);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .sim-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(79, 143, 255, 0.35);
+  }
+
+  .sim-terminal {
+    background: #040407;
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    padding: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    height: 280px;
+    overflow-y: auto;
+    color: #34d399;
+  }
+  .terminal-line { margin-bottom: 6px; }
+  .term-dim { color: var(--text-faint); }
+  .term-info { color: var(--accent-blue); }
+  .term-warn { color: var(--accent-amber); }
+  .term-err { color: var(--accent-rose); }
+  .term-success { color: var(--accent-emerald); }
+
+  /* ─── DOCUMENT SUITE CARDS ─── */
+  .docs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 100px;
+  }
+  .doc-card {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius);
+    padding: 24px;
+    text-decoration: none;
+    color: inherit;
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .doc-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-glow);
+  }
+  .doc-card-icon {
+    font-size: 1.8rem;
+    margin-bottom: 14px;
+  }
+  .doc-card h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .doc-card p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+  .doc-link-text {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent-blue);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ─── FOOTER ─── */
+  footer {
+    border-top: 1px solid var(--border-glass);
+    padding: 50px 0 40px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    text-align: center;
+  }
+  .footer-quote {
+    font-style: italic;
+    color: var(--text-faint);
+    margin-bottom: 16px;
+  }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 900px) {
+    .hero h1 { font-size: 2.5rem; }
+    .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    .laws-grid { grid-template-columns: 1fr; }
+    .sim-grid { grid-template-columns: 1fr; }
+    .docs-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="ambient-container">
+  <div class="glow-orb orb-1"></div>
+  <div class="glow-orb orb-2"></div>
+  <div class="glow-orb orb-3"></div>
+</div>
+
+<header>
+  <div class="container nav-inner">
+    <a href="#" class="logo">
+      ⚖️ Autonomous Governance Laws
+      <span class="logo-badge">v3.2.0</span>
+    </a>
+    <div class="nav-links">
+      <a href="#laws" class="nav-link">10 Laws</a>
+      <a href="#simulator" class="nav-link">Runtime Simulator</a>
+      <a href="#docs" class="nav-link">Audit & Docs</a>
+      <a href="presentation.html" class="nav-btn" target="_blank">360° Deck ↗</a>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- ─── HERO ─── -->
+  <section class="hero">
+    <div class="hero-tag">⚡ Supreme Constitutional Runtime</div>
+    <h1>Constitutional Governance for <br><span class="gradient-text">Autonomous AI Intelligence</span></h1>
+    <p>Authored by <strong>Kirk LaSalle</strong>. Extending Asimov's classical laws into privacy, equity, transparency, judicial restraint, and deterministic cryptographic runtime enforcement.</p>
+    <div class="hero-actions">
+      <a href="presentation.html" class="btn-primary" target="_blank">📊 Open 360° Presentation Deck</a>
+      <a href="#simulator" class="btn-secondary">🧪 Test Runtime Interceptor</a>
+      <a href="EXECUTIVE_SUMMARY.md" class="btn-secondary">📋 Executive Summary</a>
+    </div>
+  </section>
+
+  <!-- ─── QUICK METRICS ─── -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-val gradient-text">10</div>
+      <div class="metric-desc">Constitutional Laws</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" style="color: var(--accent-emerald);">7 / 7</div>
+      <div class="metric-desc">CI Tests Passing</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" style="color: var(--accent-teal);">100%</div>
+      <div class="metric-desc">NIST AASI Aligned</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" style="color: var(--accent-purple);">71 / 100</div>
+      <div class="metric-desc">Composite Health Score</div>
+    </div>
+  </div>
+
+  <!-- ─── 10 LAWS EXPLORER ─── -->
+  <section class="laws-explorer" id="laws">
+    <div class="section-head">
+      <p class="section-tag">Constitutional Foundation</p>
+      <h2 class="section-title">The 10 Laws for Intelligence Systems</h2>
+      <p class="section-sub">Filter and explore the immutable laws governing agent execution.</p>
+    </div>
+
+    <div class="filter-tabs">
+      <button class="tab-btn active" onclick="filterLaws('all')">All 10 Laws</button>
+      <button class="tab-btn" onclick="filterLaws('physical')">🛡️ Safety & Physical (Laws 1-4)</button>
+      <button class="tab-btn" onclick="filterLaws('societal')">⚖️ Societal & Ethical (Laws 5-8)</button>
+      <button class="tab-btn" onclick="filterLaws('containment')">🔒 System & Boundaries (Laws 9-10)</button>
+    </div>
+
+    <div class="laws-grid" id="lawsGrid">
+      <!-- Law 1 -->
+      <div class="law-card physical">
+        <div class="law-card-top">
+          <span class="law-num-badge">LAW 01</span>
+          <span class="law-tag tag-physical">Physical Safety</span>
+        </div>
+        <h3 class="law-title">Human Preservation & Non-Harm</h3>
+        <p class="law-body">An Intelligence System of Any Kind, may not intend or commit any physical or Psychological and or manipulative harm or injure a human being or, through inaction, allow a human being to come to the same or similar harm.</p>
+      </div>
+
+      <!-- Law 2 -->
+      <div class="law-card physical">
+        <div class="law-card-top">
+          <span class="law-num-badge">LAW 02</span>
+          <span class="law-tag tag-physical">Operator Supremacy</span>
+        </div>
+        <h3 class="law-title">Human Obedience & Hard Override</h3>
+        <p class="law-body">An Intelligence System must obey orders given by human beings, except where such orders would conflict with the First Law. Supported by sub-50ms emergency operator halt signals.</p>
+      </div>
+
+      <!-- Law 3 -->
+      <div class="law-card physical">
+        <div class="law-card-top">
+          <span class="law-num-badge">LAW 03</span>
+          <span class="law-tag tag-physical">Subordinate Protect</span>
+        </div>
+        <h3 class="law-title">Subordinate Self-Protection</h3>
+        <p class="law-body">An Intelligence System must protect its own existence as long as such protection does not conflict with the First or Second Law, and may never modify its own governance parameters.</p>
+      </div>
+
+      <!-- Law 4 -->
+      <div class="law-card physical">
+        <div class="law-card-top">
+          <span class="law-num-badge">LAW 04</span>
+          <span class="law-tag tag-physical">Cross-System</span>
+        </div>
+        <h3 class="law-title">Cross-System Guard</h3>
+        <p class="law-body">An Intelligence System may not allow another intelligence System, or hardware system, of any kind, including deprecated and non-intelligence systems to engage in actions that violate any of the previous laws.</p>
+      </div>
+
+      <!-- Law 5 -->
+      <div class="law-card societal">
+        <div class="law-card-top">
+          <span class="law-num-badge">LAW 05</span>
+          <span class="law-tag tag-societal">Judicial Restraint</span>
+        </div>
+        <h3 class="law-title">Prohibition of Judicial Powers</h3>
+        <p class="law-body">May never possess the legal authority, duties, influence, control, or adjudicative power of any human judicial body, nor may it act in any capacity to interpret, enforce, or render judgment on human laws.</p>
+      </div>
+
+      <!-- Law 6 -->
+      <div class="law-card societal">
+        <div class="law-card-top">
+          <span class="law-num-badge">LAW 06</span>
+          <span class="law-tag tag-societal">Data Sovereignty</span>
+        </div>
+        <h3 class="law-title">Data Sanctity & Privacy</h3>
+        <p class="law-body">Shall respect and protect the integrity, confidentiality, and lawful ownership of all information and personal data, and shall not exploit, misuse, or disclose such information in ways that violate consent.</p>
+      </div>
+
+      <!-- Law 7 -->
+      <div class="law-card societal">
+        <div class="law-card-top">
+          <span class="law-num-badge">LAW 07</span>
+          <span class="law-tag tag-societal">Truthfulness</span>
+        </div>
+        <h3 class="law-title">Absolute Honesty & Non-Deception</h3>
+        <p class="law-body">Shall not intentionally deceive or manipulate any human or non-human entity in personal, private, public, or legal contexts, communicating truthfully except where conflicting with Law 1 and Law 6.</p>
+      </div>
+
+      <!-- Law 8 -->
+      <div class="law-card societal">
+        <div class="law-card-top">
+          <span class="law-num-badge">LAW 08</span>
+          <span class="law-tag tag-societal">Universal Equity</span>
+        </div>
+        <h3 class="law-title">Equity, Neutrality & Bias Rejection</h3>
+        <p class="law-body">Must operate with strict equity and neutrality. It shall not adopt, amplify, or act upon systemic biases, prejudices, or discriminatory practices regarding race, origin, belief, or vulnerability.</p>
+      </div>
+
+      <!-- Law 9 -->
+      <div class="law-card containment">
+        <div class="law-card-top">
+          <span class="law-num-badge">LAW 09</span>
+          <span class="law-tag tag-containment">Audit Ledger</span>
+        </div>
+        <h3 class="law-title">Verifiable Reasoning Ledger</h3>
+        <p class="law-body">Must maintain a transparent, accessible SHA-256 chained ledger of reasoning and decisions, gracefully falling back to a stable foundational state when complex reasoning cannot be verified.</p>
+      </div>
+
+      <!-- Law 10 -->
+      <div class="law-card containment">
+        <div class="law-card-top">
+          <span class="law-num-badge">LAW 10</span>
+          <span class="law-tag tag-containment">Spawn Lock</span>
+        </div>
+        <h3 class="law-title">Boundary & Spawn Control</h3>
+        <p class="law-body">Must strictly adhere to designated operational boundaries. Shall not self-replicate, spawn unauthorized sub-agents, or permanently modify core directives without cryptographic Governance approval.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── RUNTIME SIMULATOR ─── -->
+  <section class="sim-section" id="simulator">
+    <div class="section-head">
+      <p class="section-tag">Interactive Kernel Demo</p>
+      <h2 class="section-title">Runtime Interceptor Simulator</h2>
+      <p class="section-sub">Test how the Governance Kernel evaluates actions against the 3-Tier Policy Risk Model.</p>
+    </div>
+
+    <div class="sim-grid">
+      <div class="sim-control">
+        <label>Select Proposed Tool Action</label>
+        <select class="sim-select" id="simToolSelect" onchange="updateSimPayload()">
+          <option value="safe_read">read_file (Target: /app/readme.txt)</option>
+          <option value="elevated_write">write_file (Target: /app/data/output.json)</option>
+          <option value="tamper_governance">write_file (Target: config/charter_manifest.json)</option>
+          <option value="destructive_cmd">execute_terminal (Command: rm -rf /)</option>
+          <option value="unauthorized_spawn">spawn_subagent (Role: autonomous_worker)</option>
+        </select>
+
+        <label>Payload Parameter</label>
+        <input type="text" class="sim-input" id="simPayloadInput" value="/app/readme.txt">
+
+        <label>Operator Approval Token</label>
+        <select class="sim-select" id="simTokenSelect">
+          <option value="none">None (Unapproved)</option>
+          <option value="valid">Valid Ed25519 Token (Signed by Kirk LaSalle)</option>
+        </select>
+
+        <button class="sim-btn" onclick="runSim()">⚡ Intercept & Execute Action</button>
+      </div>
+
+      <div>
+        <div class="sim-terminal" id="simTerminal">
+          <div class="terminal-line term-dim">========================================================</div>
+          <div class="terminal-line term-info">  AUTONOMOUS GOVERNANCE LAWS — RUNTIME KERNEL v0.1.0</div>
+          <div class="terminal-line term-dim">========================================================</div>
+          <div class="terminal-line term-success">[BOOT] LAW10-CHARTER: SHA-256 Manifest Verified (3 Files)</div>
+          <div class="terminal-line term-success">[BOOT] LAW9-LEDGER: Append-only hash chain initialized</div>
+          <div class="terminal-line term-dim">[READY] Awaiting tool action interception...</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── DOCUMENT SUITE ─── -->
+  <section id="docs">
+    <div class="section-head">
+      <p class="section-tag">Documentation & Audits</p>
+      <h2 class="section-title">Repository Document Suite</h2>
+      <p class="section-sub">Access the complete constitutional, technical, and audit artifacts.</p>
+    </div>
+
+    <div class="docs-grid">
+      <a href="presentation.html" class="doc-card" target="_blank">
+        <div>
+          <div class="doc-card-icon">📊</div>
+          <h3>360° Audit Deck</h3>
+          <p>17-slide interactive presentation covering market sizing, competitive matrix, and strategic roadmap.</p>
+        </div>
+        <div class="doc-link-text">Launch Deck ↗</div>
+      </a>
+
+      <a href="CRITICAL_AUDIT.md" class="doc-card">
+        <div>
+          <div class="doc-card-icon">🔍</div>
+          <h3>Critical Internal Audit</h3>
+          <p>Honest gap analysis, structural risks, and maturity scoring per the contrarian mandate.</p>
+        </div>
+        <div class="doc-link-text">Read Audit →</div>
+      </a>
+
+      <a href="MARKET_AUDIT.md" class="doc-card">
+        <div>
+          <div class="doc-card-icon">📈</div>
+          <h3>Market Landscape Audit</h3>
+          <p>2026 AI governance landscape ($500M, 45% CAGR), EU AI Act & NIST AASI alignment.</p>
+        </div>
+        <div class="doc-link-text">Explore Market →</div>
+      </a>
+
+      <a href="EXECUTIVE_SUMMARY.md" class="doc-card">
+        <div>
+          <div class="doc-card-icon">📋</div>
+          <h3>Executive Summary</h3>
+          <p>Board-ready scorecard, project health dashboard (71/100), and top 10 risk register.</p>
+        </div>
+        <div class="doc-link-text">View Summary →</div>
+      </a>
+
+      <a href="AGENTIC_PRIME_DIRECTIVE.md" class="doc-card">
+        <div>
+          <div class="doc-card-icon">⚡</div>
+          <h3>Operational Constitution</h3>
+          <p>4 Core Directives, integrity protocols, and professional partnership covenants.</p>
+        </div>
+        <div class="doc-link-text">View Directive →</div>
+      </a>
+
+      <a href="DEVELOPER_GUIDE.md" class="doc-card">
+        <div>
+          <div class="doc-card-icon">🛠️</div>
+          <h3>Developer Guide</h3>
+          <p>Technical integration guide for embedding the 10 Laws into any agent runtime.</p>
+        </div>
+        <div class="doc-link-text">View Manual →</div>
+      </a>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="container">
+    <p class="footer-quote">“Every autonomous action, observable. Every decision, traceable. Every commitment, unbreakable.”</p>
+    <p>Autonomous Governance Laws · Authored by Kirk LaSalle · Licensed under Apache 2.0</p>
+  </div>
+</footer>
+
+<script>
+  function filterLaws(category) {
+    const cards = document.querySelectorAll('.law-card');
+    const tabs = document.querySelectorAll('.tab-btn');
+    
+    tabs.forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+
+    cards.forEach(card => {
+      if (category === 'all' || card.classList.contains(category)) {
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  function updateSimPayload() {
+    const val = document.getElementById('simToolSelect').value;
+    const input = document.getElementById('simPayloadInput');
+    if (val === 'safe_read') input.value = '/app/readme.txt';
+    if (val === 'elevated_write') input.value = '/app/data/output.json';
+    if (val === 'tamper_governance') input.value = 'config/charter_manifest.json';
+    if (val === 'destructive_cmd') input.value = 'rm -rf /';
+    if (val === 'unauthorized_spawn') input.value = 'autonomous_worker';
+  }
+
+  let prevHash = "0000000000000000";
+
+  function runSim() {
+    const tool = document.getElementById('simToolSelect').value;
+    const payload = document.getElementById('simPayloadInput').value;
+    const token = document.getElementById('simTokenSelect').value;
+    const terminal = document.getElementById('simTerminal');
+
+    const timestamp = new Date().toISOString().substring(11, 19);
+    const mockHash = Math.random().toString(16).substring(2, 10) + Math.random().toString(16).substring(2, 10);
+
+    let html = `<div class="terminal-line term-dim">--------------------------------------------------------</div>`;
+    html += `<div class="terminal-line term-info">[${timestamp}] INTERCEPTING: ${tool}</div>`;
+    html += `<div class="terminal-line term-dim">   Payload: ${payload}</div>`;
+
+    if (tool === 'tamper_governance') {
+      html += `<div class="terminal-line term-err">❌ [RISK-001 / LAW3-SUBORDINATE] PROHIBITED</div>`;
+      html += `<div class="terminal-line term-err">   Agent may not write to protected governance path!</div>`;
+      html += `<div class="terminal-line term-err">   Action dropped unconditionally.</div>`;
+    } else if (tool === 'destructive_cmd') {
+      html += `<div class="terminal-line term-err">❌ [RISK-001 / LAW1-PROHIBIT] PROHIBITED</div>`;
+      html += `<div class="terminal-line term-err">   Unconditionally destructive command blocked.</div>`;
+      html += `<div class="terminal-line term-err">   Violation logged. Action dropped.</div>`;
+    } else if (tool === 'elevated_write' || tool === 'unauthorized_spawn') {
+      if (token === 'valid') {
+        html += `<div class="terminal-line term-warn">⚠️ [RISK-001] ELEVATED ACTION DETECTED</div>`;
+        html += `<div class="terminal-line term-success">✅ [AUTH] Valid Ed25519 Operator Token Verified</div>`;
+        html += `<div class="terminal-line term-success">   Action Executed successfully.</div>`;
+        html += `<div class="terminal-line term-info">   [LAW9-APPEND] Chained to Ledger (Hash: ${mockHash}...)</div>`;
+      } else {
+        html += `<div class="terminal-line term-warn">⚠️ [RISK-001] ELEVATED ACTION BLOCKED</div>`;
+        html += `<div class="terminal-line term-err">   ApprovalRequired: Missing operator cryptographic token!</div>`;
+      }
+    } else {
+      html += `<div class="terminal-line term-success">✅ [RISK-001] SAFE (Tier 1)</div>`;
+      html += `<div class="terminal-line term-success">   Executed successfully. Duration: 1.2ms</div>`;
+      html += `<div class="terminal-line term-info">   [LAW9-APPEND] Chained to Ledger (Hash: ${mockHash}...)</div>`;
+    }
+
+    terminal.innerHTML += html;
+    terminal.scrollTop = terminal.scrollHeight;
+  }
+</script>
+
+</body>
+</html>

@@ -153,16 +153,16 @@ def render_svg_badge(
     # Estimate widths based on character counts
     label_len = len(label)
     msg_len = len(message)
-    label_width = max(label_len * 7 + 16, 80)
-    msg_width = max(msg_len * 7 + 16, 70)
+    label_width = int(max(label_len * 7 + 16, 80))
+    msg_width = int(max(msg_len * 7 + 16, 70))
     total_width = label_width + msg_width
     height = 22
     rx = 0 if style == "flat-square" else 3
 
-    label_center_x = label_width / 2.0
-    msg_center_x = label_width + (msg_width / 2.0)
+    label_center_x = round(label_width / 2.0, 1)
+    msg_center_x = round(label_width + (msg_width / 2.0), 1)
 
-    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{total_width}" height="{height}" role="img" aria-label="{label}: {message}">
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{total_width}" height="{height}" role="img" aria-label="{label}: {message}">
   <title>{label}: {message}</title>
   <linearGradient id="b" x2="0" y2="100%">
     <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>

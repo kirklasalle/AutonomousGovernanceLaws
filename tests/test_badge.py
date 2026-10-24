@@ -54,9 +54,10 @@ def test_generate_badge_asset_formats(tmp_path):
     assert "brightgreen" in parsed_json["color"] or "blue" in parsed_json["color"]
 
     # Markdown format
-    md_content, _ = generate_badge_asset(output_path=Path("assets/compliance_badge.svg"), format_type="markdown")
+    md_file = tmp_path / "compliance_badge.svg"
+    md_content, _ = generate_badge_asset(output_path=md_file, format_type="markdown")
     assert md_content.startswith("[![Autonomous Governance")
-    assert "assets/compliance_badge.svg" in md_content
+    assert "compliance_badge.svg" in md_content
 
 
 def test_audit_repository_compliance_halt(tmp_path):

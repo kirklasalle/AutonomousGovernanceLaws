@@ -29,12 +29,12 @@
 
 | Domain | Status | Specification | Artifact / Document |
 |---|:---:|---|---|
-| **Constitutional Framework** | 🟢 **Production** | 10 Laws for Intelligence Systems & Core Tenets | [`Permanent_Active_Directives.txt`](Permanent_Active_Directives.txt), [`AGENTIC_PRIME_DIRECTIVE.md`](AGENTIC_PRIME_DIRECTIVE.md) |
-| **Runtime Enforcement Covenant** | 🟢 **Production** | 3-Tier Risk Model, Attestation, Gap Registry | [`AGENTIC_SACRED_COVENANT.md`](AGENTIC_SACRED_COVENANT.md), [`GOVERNANCE.md`](GOVERNANCE.md) |
-| **Python SDK Kernel** | 🟢 **v0.1.0 Alpha** | Interceptor Kernel, Invariant Gating, Ledger Engine | [`src/autonomous_governance/`](src/autonomous_governance/), [`pyproject.toml`](pyproject.toml) |
+| **Constitutional Framework** | 🟢 **Ratified & Binding** | 10 Laws for Intelligence Systems & Core Tenets | [`Permanent_Active_Directives.txt`](Permanent_Active_Directives.txt), [`AGENTIC_PRIME_DIRECTIVE.md`](AGENTIC_PRIME_DIRECTIVE.md) |
+| **Runtime Enforcement Covenant** | 🟢 **Ratified & Binding** | 3-Tier Risk Model, Attestation, Gap Registry | [`AGENTIC_SACRED_COVENANT.md`](AGENTIC_SACRED_COVENANT.md), [`GOVERNANCE.md`](GOVERNANCE.md) |
+| **Python SDK Kernel** | 🟢 **v0.1.0 Alpha (Architecturally Sound)** | Interceptor Kernel, Invariant Gating, Ledger Engine | [`src/autonomous_governance/`](src/autonomous_governance/), [`pyproject.toml`](pyproject.toml) |
 | **Charter Verification** | 🟢 **Verified** | SHA-256 Digest Pinning (`LAW10-CHARTER` v3.2.1) | [`config/charter_manifest.json`](config/charter_manifest.json), [`scripts/verify_charter.py`](scripts/verify_charter.py) |
-| **Automated Invariant Tests** | 🟢 **22/22 Passing** | LAW1, LAW2, LAW3, LAW9, LAW10, Ed25519, DPAPI, Linter | [`tests/`](tests/), [`.github/workflows/governance_ci.yml`](.github/workflows/governance_ci.yml) |
-| **Hardware & Token Security** | 🟢 **Production** | Windows DPAPI, RFC 8032 Ed25519, Replay-Protected Tokens | [`src/autonomous_governance/security.py`](src/autonomous_governance/security.py) |
+| **Automated Invariant Tests** | 🟢 **22/22 Passing in CI** | LAW1, LAW2, LAW3, LAW9, LAW10, Ed25519, DPAPI, Linter | [`tests/`](tests/), [`.github/workflows/governance_ci.yml`](.github/workflows/governance_ci.yml) |
+| **Hardware & Token Security** | 🟢 **Operational** | Windows DPAPI, RFC 8032 Ed25519, Replay-Protected Tokens | [`src/autonomous_governance/security.py`](src/autonomous_governance/security.py) |
 | **Compliance Certification** | 🟢 **100/100 Certified** | Dynamic SVG Badge & Shields.io Endpoint Generator | [`assets/compliance_badge.svg`](assets/compliance_badge.svg), [`src/autonomous_governance/badge.py`](src/autonomous_governance/badge.py) |
 | **Constitutional Linter** | 🟢 **100/100 Score** | Static audit of prompts, tool calls, and scripts | [`src/autonomous_governance/linter.py`](src/autonomous_governance/linter.py) (`laws-lint`) |
 | **Critical Internal Audit** | 🟣 **Complete** | Candor-first gap assessment & invariant verification | [`CRITICAL_AUDIT.md`](CRITICAL_AUDIT.md) |

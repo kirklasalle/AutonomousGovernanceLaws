@@ -142,6 +142,8 @@ class GovernanceLinter:
             "findings": self.findings
         }
 
+ConstitutionalLinter = GovernanceLinter
+
 def print_report(res: Dict[str, Any]):
     print("=" * 72)
     print("      AUTONOMOUS GOVERNANCE LAWS — CONSTITUTIONAL LINTER (laws-lint)")

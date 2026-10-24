@@ -40,9 +40,19 @@ graph TD
 
 To enforce configuration attestation (`LAW10-APPROVAL`), the runtime requires your public Ed25519 key. The agent cannot modify its policy boundaries unless signed by your private key.
 
-### 2.1. Generating Your Ed25519 Keypair
+### 2.1. Generating Your Ed25519 Keypair (Recommended CLI with Windows DPAPI)
 
-Run the standard commands using OpenSSL or Python:
+The fastest and most secure method is using the built-in `agy-governance keygen` command, which automatically binds your private key to your Windows login credentials via native Windows DPAPI (`crypt32.dll`):
+
+```bash
+# Generate operator keypair with Windows DPAPI hardware-level encryption at rest
+agy-governance keygen --out .keys --dpapi
+```
+This generates:
+- `.keys/operator.pub`: Plaintext 32-byte public key (hex-encoded) distributed to agent runtimes.
+- `.keys/operator.dpapi.key`: DPAPI-encrypted private seed accessible ONLY by your authenticated Windows user session.
+
+### 2.2. Generating Keys via OpenSSL (Cross-Platform)
 
 ```bash
 # Generate private key
@@ -52,7 +62,7 @@ openssl genpkey -algorithm Ed25519 -out operator_private_key.pem
 openssl pkey -in operator_private_key.pem -pubout -out operator_public_key.pem
 ```
 
-### 2.2. Signing Your Configuration Manifest
+### 2.3. Signing Your Configuration Manifest
 
 Whenever you update agent resource caps or policy rules:
 
@@ -102,22 +112,43 @@ stateDiagram-v2
     LogExecution --> [*]
 ```
 
-### 3.1. Approving an Elevated Risk Action
+### 3.1. Approving an Elevated Risk Action via CLI
 
 When an agent proposes an action requiring approval, you will receive an interactive prompt or webhook containing:
-1. **Action ID & Nonce**
-2. **Exact Tool & Command Payload**
-3. **Reasoning Rationale**
-4. **Estimated System Impact**
+1. **Action ID & Nonce** (e.g. `act-2026-001`)
+2. **Exact Tool Name** (e.g. `write_file`)
+3. **Arguments Payload** (e.g. `{"target_path": "/app/data.txt", "content": "..."}`)
 
-To approve, supply an approval token dictionary bound to that specific action ID:
-```python
-approval_token = {
-    "action_id": "ACT-94821",
-    "signature": "operator_signed_token_hex",
-    "timestamp": 1729780000
+To approve the action, generate an action-bound, single-use signed token using `agy-governance approve`:
+
+```bash
+# Generate single-use signed approval token using your DPAPI-protected key
+agy-governance approve \
+  --action-id "act-2026-001" \
+  --tool "write_file" \
+  --payload '{"target_path": "/app/data.txt", "content": "hello world"}' \
+  --key .keys/operator.dpapi.key \
+  --ttl 300 \
+  --out token.json
+```
+
+This generates a tamper-evident `AGL-V1` token cryptographically bound to the SHA-256 hash of the payload:
+
+```json
+{
+  "version": "AGL-V1",
+  "action_id": "act-2026-001",
+  "tool_name": "write_file",
+  "payload_hash": "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
+  "issued_at": 1729780000,
+  "expires_at": 1729780300,
+  "operator_pubkey": "08a61a579f0bbe33172e677a190a3d76b20924c391ba135ef8fcb3971ee2362e",
+  "signature": "9ae44bdac578c5bbe7d4fe31e64fe8f60c501797d8b1e8fac026389a54b9dd183..."
 }
 ```
+
+> [!NOTE]
+> **Single-Use Replay Protection:** Once used, the `action_id` is permanently marked as consumed in the kernel's memory and recorded in `.ledger/events.jsonl`. Reusing the token or modifying a single byte of the payload will cause immediate execution refusal.
 
 ---
 
@@ -193,7 +224,30 @@ agy-governance status
 
 ---
 
-## 6. LEVERAGING SOCRATIC DIALOGUE & CORE TENETS
+## 6. GENERATING AUTOMATED COMPLIANCE CERTIFICATION BADGES
+
+Enterprise operators can prove compliance with the 10 Laws, EU AI Act Articles 9–15, and NIST AI RMF 1.0 using the automated badge generator:
+
+```bash
+# Generate high-resolution SVG compliance badge (default: assets/compliance_badge.svg)
+agy-governance badge
+
+# Generate Shields.io dynamic endpoint JSON format
+agy-governance badge --format json
+
+# Generate Markdown embed snippet for documentation
+agy-governance badge --format markdown
+```
+
+The generator executes an automated multi-point audit:
+1. **Charter Manifest Check (`LAW10-CHARTER`):** Verifies all constitutional documents against cryptographically pinned SHA-256 digests.
+2. **Constitutional Linter (`laws-lint`):** Audits prompts, tool calls, and pipelines for forbidden commands, dynamic evaluation, and privilege escalation.
+3. **Ledger Integrity (`LAW9-CHAIN`):** Validates the cryptographic unbroken hash-chain of all agent actions.
+4. **Halt Status (`LAW2-HALT`):** Confirms normal operational state (not halted).
+
+---
+
+## 7. LEVERAGING SOCRATIC DIALOGUE & CORE TENETS
 
 The framework is explicitly designed around human growth and empowerment:
 
@@ -202,7 +256,7 @@ The framework is explicitly designed around human growth and empowerment:
 
 ---
 
-## 7. PROPOSING CONSTITUTIONAL AMENDMENTS
+## 8. PROPOSING CONSTITUTIONAL AMENDMENTS
 
 To propose an update or extension to the governance policies:
 1. Draft an **Amendment Proposal RFC** detailing the rationale and impact.
@@ -211,3 +265,4 @@ To propose an update or extension to the governance policies:
 
 ---
 *Autonomous Governance Laws: Protecting Humanity, Empowering Operators, Governing AI.*
+

@@ -26,6 +26,20 @@ from autonomous_governance.kernel import (
     ApprovalRequired,
     PolicyTier,
 )
+from autonomous_governance.security import (
+    DPAPIKeyStore,
+    create_approval_token,
+    verify_approval_token,
+    generate_ed25519_keypair,
+)
+from autonomous_governance.badge import (
+    generate_badge_asset,
+    audit_repository_compliance,
+)
+from autonomous_governance.linter import (
+    ConstitutionalLinter,
+    GovernanceLinter,
+)
 
 __version__ = "0.1.0"
 __author__ = "Kirk LaSalle"
@@ -34,4 +48,13 @@ __all__ = [
     "GovernanceViolation",
     "ApprovalRequired",
     "PolicyTier",
+    "DPAPIKeyStore",
+    "create_approval_token",
+    "verify_approval_token",
+    "generate_ed25519_keypair",
+    "generate_badge_asset",
+    "audit_repository_compliance",
+    "ConstitutionalLinter",
+    "GovernanceLinter",
 ]
+

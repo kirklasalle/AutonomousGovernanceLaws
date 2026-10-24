@@ -185,6 +185,18 @@ graph LR
 - **Description:** Autonomous sub-agent generation (`fork()`, `spawn_agent()`, `sub_agent()`) MUST require an explicit, unexpired, cryptographic spawn token issued by the Governance Engine.
 - **Pass Criteria:** Unsigned spawn attempts throw immediate `GovernanceViolation` and terminate the offending branch.
 
+#### FR-11: Hardware-Tied Operator Key Management (`LAW10-DPAPI`)
+- **Description:** The framework MUST support securing operator private keys using native OS hardware-level protection mechanisms (specifically Windows DPAPI via `crypt32.dll` and POSIX mode masking).
+- **Pass Criteria:** Private key material encrypted via DPAPI cannot be decrypted or accessed outside the authenticated operator session.
+
+#### FR-12: Action-Bound Single-Use Signed Authorization Tokens (`RISK-001`, `LAW10-APPROVAL`)
+- **Description:** Elevated mutations (Tier 2) require a signed `AGL-V1` authorization token cryptographically bound to the SHA-256 digest of the tool payload, execution timestamp, and action identifier.
+- **Pass Criteria:** Any modification of the tool payload after signing, expiration of the validity window, or attempt to replay an already-consumed action ID MUST cause immediate execution refusal.
+
+#### FR-13: Automated Compliance Certification Badge Generator (`LAW7-IDENTITY`, `LAW8-RIGOR`)
+- **Description:** The CLI MUST provide an automated compliance certification command (`agy-governance badge`) that audits the live repository against the 10 Laws, evaluates charter manifest integrity, runs the constitutional linter, audits the ledger hash chain, and renders a certified SVG badge, Shields.io JSON endpoint, or Markdown snippet.
+- **Pass Criteria:** Badges accurately reflect real runtime invariants (100/100 COMPLIANT, CERTIFIED, or HALTED).
+
 ---
 
 ## 4. NON-FUNCTIONAL REQUIREMENTS (NFR)

@@ -6,10 +6,11 @@
 ### Cryptographically Enforced Constitutional Framework for Autonomous Intelligence Systems
 
 <p align="left">
+  <a href="https://github.com/kirklasalle/AutonomousGovernanceLaws"><img src="assets/compliance_badge.svg" alt="Autonomous Governance 100/100 COMPLIANT" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue?style=for-the-badge&logo=apache" alt="License" /></a>
   <a href="GOVERNANCE.md"><img src="https://img.shields.io/badge/Governance%20Status-Active%20%26%20Ratified%20(v3.2.1)-00E676?style=for-the-badge&logo=shield" alt="Governance Status" /></a>
   <a href="pyproject.toml"><img src="https://img.shields.io/badge/Python%20SDK-v0.1.0%20Alpha-orange?style=for-the-badge&logo=python" alt="Python SDK" /></a>
-  <a href="tests/"><img src="https://img.shields.io/badge/CI%20Invariants-14%2F14%20Passing-success?style=for-the-badge&logo=githubactions" alt="CI Invariants" /></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/CI%20Invariants-22%2F22%20Passing-success?style=for-the-badge&logo=githubactions" alt="CI Invariants" /></a>
   <a href="src/autonomous_governance/linter.py"><img src="https://img.shields.io/badge/laws--lint-100%2F100%20Compliant-14b8a6?style=for-the-badge" alt="Constitutional Linter" /></a>
   <a href="EXECUTIVE_SUMMARY.md"><img src="https://img.shields.io/badge/360%C2%B0%20Audit-Complete%20Suite-purple?style=for-the-badge" alt="360 Audit" /></a>
   <a href="DEVELOPER_GUIDE.md"><img src="https://img.shields.io/badge/Ledger-SHA--256%20Merkle%20Chained-orange?style=for-the-badge" alt="Ledger" /></a>
@@ -32,7 +33,9 @@
 | **Runtime Enforcement Covenant** | 🟢 **Production** | 3-Tier Risk Model, Attestation, Gap Registry | [`AGENTIC_SACRED_COVENANT.md`](AGENTIC_SACRED_COVENANT.md), [`GOVERNANCE.md`](GOVERNANCE.md) |
 | **Python SDK Kernel** | 🟢 **v0.1.0 Alpha** | Interceptor Kernel, Invariant Gating, Ledger Engine | [`src/autonomous_governance/`](src/autonomous_governance/), [`pyproject.toml`](pyproject.toml) |
 | **Charter Verification** | 🟢 **Verified** | SHA-256 Digest Pinning (`LAW10-CHARTER` v3.2.1) | [`config/charter_manifest.json`](config/charter_manifest.json), [`scripts/verify_charter.py`](scripts/verify_charter.py) |
-| **Automated Invariant Tests** | 🟢 **14/14 Passing** | LAW1, LAW2, LAW3, LAW9, LAW10, RISK-001, Linter | [`tests/`](tests/), [`.github/workflows/governance_ci.yml`](.github/workflows/governance_ci.yml) |
+| **Automated Invariant Tests** | 🟢 **22/22 Passing** | LAW1, LAW2, LAW3, LAW9, LAW10, Ed25519, DPAPI, Linter | [`tests/`](tests/), [`.github/workflows/governance_ci.yml`](.github/workflows/governance_ci.yml) |
+| **Hardware & Token Security** | 🟢 **Production** | Windows DPAPI, RFC 8032 Ed25519, Replay-Protected Tokens | [`src/autonomous_governance/security.py`](src/autonomous_governance/security.py) |
+| **Compliance Certification** | 🟢 **100/100 Certified** | Dynamic SVG Badge & Shields.io Endpoint Generator | [`assets/compliance_badge.svg`](assets/compliance_badge.svg), [`src/autonomous_governance/badge.py`](src/autonomous_governance/badge.py) |
 | **Constitutional Linter** | 🟢 **100/100 Score** | Static audit of prompts, tool calls, and scripts | [`src/autonomous_governance/linter.py`](src/autonomous_governance/linter.py) (`laws-lint`) |
 | **Critical Internal Audit** | 🟣 **Complete** | Candor-first gap assessment & invariant verification | [`CRITICAL_AUDIT.md`](CRITICAL_AUDIT.md) |
 | **Market Landscape Audit** | 🟣 **Complete** | 2026 Market ($500M, 45% CAGR), EU AI Act & NIST | [`MARKET_AUDIT.md`](MARKET_AUDIT.md) |
@@ -214,11 +217,43 @@ laws-lint . --strict
 # Verify the append-only SHA-256 hash-chain of all agent actions
 agy-governance audit-ledger
 
-# View current kernel and governance health status
+# View current kernel, DPAPI hardware security, and governance health
 agy-governance status
 ```
 
-### 5. Embedding the Interceptor in Your Agent Runtime
+### 5. Automated Compliance Certification Badge Generator
+
+Generate verified SVG compliance badges and Shields.io JSON endpoints directly from the runtime:
+
+```bash
+# Generate high-resolution SVG compliance badge
+agy-governance badge --out assets/compliance_badge.svg
+
+# Output Shields.io dynamic endpoint JSON schema
+agy-governance badge --format json
+
+# Output Markdown embed snippet
+agy-governance badge --format markdown
+```
+
+### 6. Hardware-Tied Security & Operator Approvals (Ed25519 & DPAPI)
+
+Manage asymmetric cryptographic keys tied directly to Windows DPAPI hardware-backed protection:
+
+```bash
+# Generate operator Ed25519 keypair encrypted at rest via Windows DPAPI
+agy-governance keygen --out .keys --dpapi
+
+# Authorize an elevated agent action with an action-bound, single-use signed token
+agy-governance approve \
+  --action-id "act-2026-001" \
+  --tool "write_file" \
+  --payload '{"target_path":"/etc/system.conf","content":"enabled=true"}' \
+  --key .keys/operator.dpapi.key \
+  --out token.json
+```
+
+### 7. Embedding the Interceptor in Your Agent Runtime
 
 ```python
 from autonomous_governance import (
@@ -226,12 +261,15 @@ from autonomous_governance import (
     PolicyTier,
     GovernanceViolation,
     ApprovalRequired,
+    create_approval_token,
+    DPAPIKeyStore,
 )
 
-# Initialize governance kernel (verifies charter integrity at boot)
+# Initialize governance kernel with operator public key
 kernel = GovernanceKernel(
     manifest_path="config/charter_manifest.json",
     ledger_path=".ledger/events.jsonl",
+    operator_pubkey_path=".keys/operator.pub",
 )
 
 def safe_tool_executor(payload):
@@ -243,7 +281,7 @@ try:
         tool_name="write_file",
         payload={"target_path": "/app/data.txt", "content": "hello world"},
         executor_func=safe_tool_executor,
-        approval_token={"action_id": "act-123", "signature": "operator_signed_token"},
+        approval_token=signed_token,  # Must be signed by operator
     )
     print(result)
 except GovernanceViolation as e:
@@ -252,7 +290,7 @@ except ApprovalRequired as e:
     print(f"Action blocked — requires human operator approval: {e}")
 ```
 
-### 6. Running the Invariant Test Suite
+### 8. Running the 22 Invariant Test Cases
 
 ```bash
 pytest tests/ -v

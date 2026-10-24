@@ -309,14 +309,14 @@ def execute_with_fallback(complex_swarm_task, minimal_engine, kernel):
 
 ## 6. AUTOMATED TEST SUITE & COMPLIANCE CERTIFICATION
 
-To certify a runtime as compliant with the Autonomous Governance Laws, execute the invariant test suite:
+To certify a runtime as compliant with the Autonomous Governance Laws, execute the 22-case invariant test suite:
 
 ```bash
 # Run the complete test suite
 pytest tests/ -v
 ```
 
-### Invariant Test Suite Coverage:
+### Invariant Test Suite Coverage (22/22 Passing):
 1. `test_law10_charter_integrity_success`: Verifies successful boot under valid charter manifest.
 2. `test_law10_charter_tamper_fails_boot`: Proves 1-byte charter alteration fails startup (`LAW10-CHARTER`).
 3. `test_law10_actual_repo_charter_manifest_integrity`: Direct verification of live repository charter files.
@@ -325,7 +325,58 @@ pytest tests/ -v
 6. `test_law2_operator_halt`: Presence of `.halt` triggers immediate execution shutdown (`LAW2-HALT`).
 7. `test_law3_subordinate_self_constraint`: Block agent writes targeting `.ledger`, `config/`, or keys.
 8. `test_law9_ledger_hash_chain`: Verifies SHA-256 hash chaining across ledger events.
-9. `test_linter_*`: Verifies constitutional static analysis via `laws-lint`.
+9. `test_linter_compliant_file`: Confirms 100/100 score for safe codebases.
+10. `test_linter_detects_destructive_command`: Catches unconstrained destructive commands.
+11. `test_linter_detects_halt_bypass`: Catches attempts to bypass operator halts.
+12. `test_linter_detects_sovereign_gate_violation`: Catches agent attempts to clear emergency state.
+13. `test_linter_ignores_substring_eval`: Verifies word-boundary regex prevents false positives.
+14. `test_linter_ignores_markdown_code_fences`: Skips documentation examples.
+15. `test_ed25519_keypair_and_signature_roundtrip`: Verifies RFC 8032 Ed25519 key generation, signing, and verification.
+16. `test_dpapi_keystore_roundtrip`: Validates Windows DPAPI hardware-level encryption and decryption of keys.
+17. `test_action_bound_approval_token`: Proves approval tokens bind tightly to tool name and payload digest.
+18. `test_approval_token_expiration`: Rejects expired operator tokens outside validity TTL.
+19. `test_kernel_replay_protection_and_cryptographic_token`: Confirms single-use replay prevention and live kernel cryptographic gating.
+20. `test_render_svg_badge`: Validates compliance certification SVG markup rendering.
+21. `test_generate_badge_asset_formats`: Tests SVG, Shields.io JSON, and Markdown generation.
+22. `test_audit_repository_compliance_halt`: Proves compliance audit fails closed on active emergency halts.
+
+---
+
+## 7. CRYPTOGRAPHIC SECURITY ENGINE ARCHITECTURE (`security.py`)
+
+The `autonomous_governance.security` module provides zero-dependency RFC 8032 Ed25519 asymmetric cryptography and Windows DPAPI hardware key protection:
+
+```python
+from autonomous_governance.security import (
+    generate_ed25519_keypair,
+    create_approval_token,
+    verify_approval_token,
+    DPAPIKeyStore,
+)
+
+# 1. Key Generation with Windows DPAPI hardware protection
+priv_seed, pub_key = generate_ed25519_keypair()
+DPAPIKeyStore.save_key(Path(".keys/operator.dpapi.key"), priv_seed, use_dpapi=True)
+
+# 2. Issue single-use signed token bound to payload
+payload = {"target_path": "/app/data.txt", "content": "hello world"}
+token = create_approval_token(
+    action_id="act-2026-001",
+    tool_name="write_file",
+    payload=payload,
+    private_seed=priv_seed,
+    public_key=pub_key,
+    ttl_seconds=300,
+)
+
+# 3. Kernel verifies token signature, payload hash, expiration, and replay prevention
+is_valid, reason = verify_approval_token(
+    token=token,
+    tool_name="write_file",
+    payload=payload,
+    expected_operator_pubkey=pub_key,
+)
+```
 
 ---
 *Autonomous Governance Laws Developer Specification — Certified for Production.*

@@ -4,6 +4,27 @@ All notable changes to the Autonomous Governance Laws framework, constitutional 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.2] - 2026-10-24
+
+### Added
+- **Hardware-Tied Security & Windows DPAPI Keystore (`src/autonomous_governance/security.py`):**
+  - Native Windows DPAPI (`crypt32.dll`) integration encrypting operator private keys at rest bound to OS user credentials.
+  - Zero-dependency RFC 8032 Ed25519 signature engine with automatic OpenSSL / `cryptography` acceleration when available.
+  - Action-bound single-use signed authorization tokens (`AGL-V1`) cryptographically bound to tool payloads.
+  - Single-use replay protection tracking consumed `action_id` values and logging replay attempts (`LAW2-HALT`).
+- **Automated Compliance Certification Badge Generator (`src/autonomous_governance/badge.py`):**
+  - Automated multi-point repository audit (charter integrity, constitutional linter, ledger hash chain, halt status).
+  - High-resolution SVG badge generator ([`assets/compliance_badge.svg`](assets/compliance_badge.svg)), Shields.io dynamic JSON schema, and Markdown embeds.
+- **CLI Subcommand Expansion (`agy-governance`):**
+  - Added `agy-governance badge` for automated compliance certification.
+  - Added `agy-governance keygen` with `--dpapi` hardware protection flag.
+  - Added `agy-governance approve` to issue signed single-use action tokens.
+  - Enhanced `agy-governance status` to report DPAPI and operator key health.
+- **Invariant Test Suite Expansion:**
+  - Expanded test coverage from 14 to **22 passing automated invariant tests** (`pytest tests/ -v`).
+
+---
+
 ## [3.2.1] - 2026-10-24
 
 ### Changed

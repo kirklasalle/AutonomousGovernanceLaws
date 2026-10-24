@@ -37,6 +37,9 @@ desktop.ini
 # ─── Governance Runtime ───
 .ledger/
 .halt
+.keys/
+*.key
+*.pub
 *.pem
 *.sig
 config/policy_registry.sig

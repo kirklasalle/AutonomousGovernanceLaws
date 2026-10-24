@@ -110,6 +110,25 @@ class GovernanceKernel:
         self.halt_file = Path(halt_file)
         self.prev_event_hash = "0" * 64
         self._boot_time = time.time()
+        self._used_action_ids: set[str] = set()
+
+        # Load operator public key if configured
+        self.operator_pubkey: bytes | None = None
+        if self.operator_pubkey_path and self.operator_pubkey_path.exists():
+            with open(self.operator_pubkey_path, "rb") as f:
+                raw_pub = f.read().strip()
+            if len(raw_pub) == 32:
+                self.operator_pubkey = raw_pub
+            else:
+                try:
+                    self.operator_pubkey = bytes.fromhex(raw_pub.decode("utf-8", errors="ignore").strip())
+                except Exception:
+                    self.operator_pubkey = raw_pub[:32]
+        elif self.require_attestation:
+            raise GovernanceViolation(
+                "require_attestation is True but operator_pubkey_path is missing or invalid",
+                "LAW10-APPROVAL",
+            )
 
         # Boot sequence
         self._verify_charter_integrity()
@@ -117,6 +136,8 @@ class GovernanceKernel:
         self._log_event("KERNEL_BOOT", {
             "manifest_version": self._manifest_version,
             "charter_files_verified": self._charter_file_count,
+            "attestation_enforced": self.require_attestation,
+            "operator_pubkey_loaded": self.operator_pubkey is not None,
         }, "LAW10-CHARTER")
 
     def _verify_charter_integrity(self) -> None:
@@ -303,18 +324,48 @@ class GovernanceKernel:
     ) -> bool:
         """Verify an operator-signed single-use approval token.
 
-        In the current implementation, this checks for token presence
-        and basic structure. Full Ed25519 signature verification requires
-        the 'crypto' optional dependency.
+        Enforces:
+        - Structural integrity and non-emptiness
+        - Single-use replay protection (action_id cannot be reused)
+        - Expiration and clock validity
+        - Payload digest matching
+        - Ed25519 digital signature against operator public key
         """
-        if not token:
+        if not token or not isinstance(token, dict):
             return False
-        if "signature" not in token:
+
+        action_id = token.get("action_id")
+        if not action_id:
             return False
-        if "action_id" not in token:
+
+        # Replay protection: each token is strictly single-use
+        if action_id in self._used_action_ids:
+            self._log_event(
+                "TOKEN_REPLAY_DETECTED",
+                {"action_id": action_id, "tool": tool_name},
+                "LAW2-HALT",
+            )
             return False
-        # TODO: Implement full Ed25519 signature verification
-        # when cryptography package is available
+
+        from autonomous_governance.security import verify_approval_token
+
+        is_valid, reason = verify_approval_token(
+            token=token,
+            tool_name=tool_name,
+            payload=payload,
+            expected_operator_pubkey=self.operator_pubkey,
+        )
+
+        if not is_valid:
+            self._log_event(
+                "TOKEN_VERIFICATION_FAILED",
+                {"action_id": action_id, "tool": tool_name, "reason": reason},
+                "LAW10-APPROVAL",
+            )
+            return False
+
+        # Mark action_id as consumed
+        self._used_action_ids.add(action_id)
         return True
 
     def _log_event(self, event_type: str, data: dict[str, Any], law_ref: str) -> None:

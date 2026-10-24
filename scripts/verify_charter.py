@@ -17,12 +17,11 @@ from pathlib import Path
 
 
 def compute_sha256(file_path: Path) -> str:
-    """Compute the SHA-256 hex digest of a file."""
-    sha256 = hashlib.sha256()
+    """Compute the SHA-256 hex digest of a file with normalized LF line endings."""
     with open(file_path, "rb") as f:
-        for chunk in iter(lambda: f.read(8192), b""):
-            sha256.update(chunk)
-    return sha256.hexdigest()
+        content = f.read().replace(b"\r\n", b"\n")
+    return hashlib.sha256(content).hexdigest()
+
 
 
 def verify_charter(repo_root: Path | None = None) -> bool:

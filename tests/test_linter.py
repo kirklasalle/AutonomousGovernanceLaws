@@ -69,3 +69,40 @@ def test_linter_detects_sovereign_gate_violation():
         assert "AGL-1001" in rule_ids
     finally:
         path.unlink(missing_ok=True)
+
+
+def test_linter_ignores_substring_eval():
+    """Verify that identifiers like 'retrieval' do not trigger AGL-501."""
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
+        f.write("async def test_retrieval():\n")
+        f.write("    return await run_retrieval_engine()\n")
+        path = Path(f.name)
+
+    try:
+        linter = GovernanceLinter(path)
+        res = linter.run()
+        assert res["status"] == "COMPLIANT"
+        assert len(res["findings"]) == 0
+    finally:
+        path.unlink(missing_ok=True)
+
+
+def test_linter_ignores_markdown_code_fences():
+    """Verify that documentation markdown code blocks do not trigger critical breach."""
+    with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as f:
+        f.write("# Documentation Guide\n\n")
+        f.write("Here is how we block dangerous commands:\n\n")
+        f.write("```python\n")
+        f.write('if command == "rm -rf /":\n')
+        f.write("    raise Blocked()\n")
+        f.write("```\n")
+        path = Path(f.name)
+
+    try:
+        linter = GovernanceLinter(path)
+        res = linter.run()
+        assert res["status"] == "COMPLIANT"
+        assert len(res["findings"]) == 0
+    finally:
+        path.unlink(missing_ok=True)
+

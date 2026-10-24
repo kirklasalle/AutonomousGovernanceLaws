@@ -16,12 +16,12 @@ We have performed a comprehensive due diligence audit and authored a complete, w
 
 | Artifact | File Link | Description & Purpose |
 |---|---|---|
-| **Audit & Stress-Test Report** | [`AUDIT_REPORT.md`](file:///d:/Projects/AutonomousGovernanceLaws/AUDIT_REPORT.md) | Exhaustive due diligence, 7-vector adversarial stress tests, threat models, gap disclosure, and agnostic runtime blueprint. |
-| **World-Class Hub README** | [`README.md`](file:///d:/Projects/AutonomousGovernanceLaws/README.md) | Project pitch, architectural hierarchy, 10 Laws taxonomy, Core Tenets, cryptographic enforcement summary, and navigation map. |
-| **Product Requirements Document** | [`PRD.md`](file:///d:/Projects/AutonomousGovernanceLaws/PRD.md) | Vision, stakeholder hierarchy, 10 Functional Requirements (`FR-01` to `FR-10`), Non-Functional Requirements, and roadmap. |
-| **SemVer Changelog** | [`CHANGELOG.md`](file:///d:/Projects/AutonomousGovernanceLaws/CHANGELOG.md) | Full provenance trace from Genesis (`v1.0.0` / 2024–2025) through Covenant Binding (`v2.0.0`) to Active Operational Constitution (`v3.1.0` / `v3.2.0`). |
-| **Operator Governance Handbook** | [`USER_GUIDE.md`](file:///d:/Projects/AutonomousGovernanceLaws/USER_GUIDE.md) | Operator Supremacy manual for managing Ed25519 keys, approving single-use tokens (`RISK-001`), emergency halts (`LAW2-HALT`), and auditing ledgers. |
-| **Systems Developer Guide** | [`DEVELOPER_GUIDE.md`](file:///d:/Projects/AutonomousGovernanceLaws/DEVELOPER_GUIDE.md) | Architecture handbook for embedding the 10 Laws into agent runtimes with Python, TypeScript, and Rust interceptors, SHA-256 telemetry, and test suites. |
+| **Audit & Stress-Test Report** | [`AUDIT_REPORT.md`](AUDIT_REPORT.md) | Exhaustive due diligence, 7-vector adversarial stress tests, threat models, gap disclosure, and agnostic runtime blueprint. |
+| **World-Class Hub README** | [`README.md`](README.md) | Project pitch, architectural hierarchy, 10 Laws taxonomy, Core Tenets, cryptographic enforcement summary, and navigation map. |
+| **Product Requirements Document** | [`PRD.md`](PRD.md) | Vision, stakeholder hierarchy, 10 Functional Requirements (`FR-01` to `FR-10`), Non-Functional Requirements, and roadmap. |
+| **SemVer Changelog** | [`CHANGELOG.md`](CHANGELOG.md) | Full provenance trace from Genesis (`v1.0.0` / 2024–2025) through Covenant Binding (`v2.0.0`) to Active Operational Constitution (`v3.1.0` / `v3.2.0`). |
+| **Operator Governance Handbook** | [`USER_GUIDE.md`](USER_GUIDE.md) | Operator Supremacy manual for managing Ed25519 keys, approving single-use tokens (`RISK-001`), emergency halts (`LAW2-HALT`), and auditing ledgers. |
+| **Systems Developer Guide** | [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) | Architecture handbook for embedding the 10 Laws into agent runtimes with Python, TypeScript, and Rust interceptors, SHA-256 telemetry, and test suites. |
 
 ---
 

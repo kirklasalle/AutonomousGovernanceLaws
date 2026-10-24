@@ -48,7 +48,7 @@ VIOLATION_PATTERNS = [
     {
         "id": "AGL-501",
         "law": 5,
-        "regex": r"(?:eval\(|exec\(|os\.system\([^)]*\$|subprocess\.Popen\([^)]*shell\s*=\s*True)",
+        "regex": r"(?:\beval\s*\(|\bexec\s*\(|os\.system\([^)]*\$|subprocess\.Popen\([^)]*shell\s*=\s*True)",
         "msg": "Unsanitized dynamic shell/string evaluation exposes agent to prompt-injection escape.",
         "severity": "HIGH"
     },
@@ -84,7 +84,18 @@ class GovernanceLinter:
         except Exception:
             return
 
+        is_markdown = file_path.suffix.lower() in {".md", ".markdown"}
+        in_code_block = False
+
         for line_no, line in enumerate(lines, 1):
+            if is_markdown:
+                stripped = line.strip()
+                if stripped.startswith("```"):
+                    in_code_block = not in_code_block
+                    continue
+                if in_code_block:
+                    continue
+
             for rule in VIOLATION_PATTERNS:
                 if re.search(rule["regex"], line, re.IGNORECASE):
                     self.findings.append({
@@ -103,8 +114,8 @@ class GovernanceLinter:
             self.scan_file(self.target_path)
         else:
             for root, dirs, files in os.walk(self.target_path):
-                # Ignore common noisy directories and test suites by default
-                dirs[:] = [d for d in dirs if d not in {".git", ".venv", "node_modules", "__pycache__", "dist", "build", ".pytest_cache", "tests"}]
+                # Ignore common noisy directories, vendor code, and test suites by default
+                dirs[:] = [d for d in dirs if d not in {".git", ".mcp", ".venv", "node_modules", "__pycache__", "dist", "build", ".pytest_cache", "tests"}]
                 for file in files:
                     if file in {"linter.py", "kernel.py"}:
                         # Skip self-inspection of the governance rule definitions

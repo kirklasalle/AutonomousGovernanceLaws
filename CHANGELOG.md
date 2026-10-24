@@ -4,6 +4,15 @@ All notable changes to the Autonomous Governance Laws framework, constitutional 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.1] - 2026-10-24
+
+### Changed
+- **Charter Digest Re-Pinning & Council Ratification:**
+  - Ratified verbatim synchronization of Core Tenets and Laws 4 & 9 punctuation in [`AGENTIC_PRIME_DIRECTIVE.md`](AGENTIC_PRIME_DIRECTIVE.md).
+  - Generalized covenant binding in [`AGENTIC_SACRED_COVENANT.md`](AGENTIC_SACRED_COVENANT.md) to universal Human Operator and Intelligence Systems partnership.
+  - Re-computed and pinned SHA-256 digests in [`config/charter_manifest.json`](config/charter_manifest.json) v3.2.1.
+  - Formally recorded ratification under Amendment History in [`GOVERNANCE.md`](GOVERNANCE.md).
+
 ---
 
 ## [3.2.0] - 2026-08-30

@@ -11,9 +11,9 @@ Target Artifacts: `README.md`, `PRD.md`, `CHANGELOG.md`, `USER_GUIDE.md`, `DEVEL
 The **AutonomousGovernanceLaws** repository represents the supreme constitutional, ethical, and operational framework governing autonomous artificial intelligence systems, agentic runtimes (e.g., PRISM Refraction), and multi-agent swarms. 
 
 The existing repository consists of three foundational documents:
-1. [`Permanent_Active_Directives.txt`](file:///d:/Projects/AutonomousGovernanceLaws/Permanent_Active_Directives.txt): The immutable genesis document establishing the **10 Laws for Intelligence Systems** and **Core Tenets** authored by Kirk LaSalle.
-2. [`AGENTIC_PRIME_DIRECTIVE.md`](file:///d:/Projects/AutonomousGovernanceLaws/AGENTIC_PRIME_DIRECTIVE.md): The operational constitution (v3.1.0) establishing the 4 Core Directives (Governance-Native Excellence, Absolute Integrity, Technical Mastery, Professional Partnership), the 10 Laws, and eternal commitments.
-3. [`AGENTIC_SACRED_COVENANT.md`](file:///d:/Projects/AutonomousGovernanceLaws/AGENTIC_SACRED_COVENANT.md): The bilateral Human-AI covenant (v2.0) defining runtime enforcement mechanics, attestation keys (Ed25519), append-only telemetry, self-constraint invariants, and operational boundary checks.
+1. [`Permanent_Active_Directives.txt`](Permanent_Active_Directives.txt): The immutable genesis document establishing the **10 Laws for Intelligence Systems** and **Core Tenets** authored by Kirk LaSalle.
+2. [`AGENTIC_PRIME_DIRECTIVE.md`](AGENTIC_PRIME_DIRECTIVE.md): The operational constitution (v3.1.0) establishing the 4 Core Directives (Governance-Native Excellence, Absolute Integrity, Technical Mastery, Professional Partnership), the 10 Laws, and eternal commitments.
+3. [`AGENTIC_SACRED_COVENANT.md`](AGENTIC_SACRED_COVENANT.md): The bilateral Human-AI covenant (v2.0) defining runtime enforcement mechanics, attestation keys (Ed25519), append-only telemetry, self-constraint invariants, and operational boundary checks.
 
 This plan details the full creation of a world-class documentation suite and a deep technical/legal audit to elevate this repository into an enterprise-grade open-source governance standard.
 

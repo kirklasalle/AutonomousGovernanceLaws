@@ -73,7 +73,7 @@ The **Intelligence Governance Council** is the governing body responsible for re
 
 | Date | Amendment | Proposed By | Status |
 |---|---|---|---|
-| *No amendments have been ratified* | — | — | — |
+| **2026-10-24** | **Charter Verbatim Alignment & Sovereign Covenant Generalization:** Updated `AGENTIC_PRIME_DIRECTIVE.md` (Core Tenets expansion, Law 4/9 verbatim punctuation) and `AGENTIC_SACRED_COVENANT.md` (sovereign human operator / intelligence systems generalization, Core Tenets synchronization). SHA-256 digests pinned in `config/charter_manifest.json` v3.2.1. | Kirk LaSalle (Supreme Operator) | **Ratified & Pinned** |
 
 ---
 

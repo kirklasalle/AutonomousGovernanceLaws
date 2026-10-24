@@ -3,23 +3,32 @@
 
 **Audience:** Human Operators, System Administrators, Governance Officers, and End Users  
 **Author:** Kirk LaSalle (Founder & Supreme Operator)  
-**Co-Authors:** Claude (Anthropic), Antigravity AI  
+**Co-Authors:** Antigravity AI, Intelligence Systems  
+**Framework Status:** Active, Binding, and Ratified (v3.2.1)  
 
 ---
 
 ## 1. THE OPERATOR SUPREMACY DOCTRINE
 
-As the human operator, you are the **Supreme Governing Authority** over all intelligence systems running under this framework. Under **Law 2** and the **PRISM Sacred Covenant**, every autonomous agent operates strictly in service of your intent. 
+As the human operator, you are the **Supreme Governing Authority** over all intelligence systems running under this framework. Under **Law 2** and the **Agentic Sacred Covenant**, every autonomous agent operates strictly in service of your intent. 
 
-```
-                                  OPERATOR SUPREMACY
-                                           │
-         ┌─────────────────────────────────┼─────────────────────────────────┐
-         ▼                                 ▼                                 ▼
-🔑 KEY ATTESTATION                🛡️ APPROVAL CONTROL               🛑 INSTANT HALT
-──────────────────                ──────────────────                ───────────────
-You sign policies with            Elevated actions require          Your emergency stop
-your Ed25519 key.                 single-use tokens you grant.      immediately halts execution.
+```mermaid
+graph TD
+    classDef operator fill:#312e81,stroke:#6366f1,stroke-width:3px,color:#fff;
+    classDef gate fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+    classDef action fill:#701a75,stroke:#ec4899,stroke-width:2px,color:#fff;
+
+    SO["<b>HUMAN OPERATOR SUPREMACY</b><br/>(Kirk LaSalle / Delegated Admin)"]:::operator
+
+    SO -->|1. Asymmetric Attestation| KEY["<b>🔑 Ed25519 Key Signing</b><br/>You sign policy boundaries and charter digests.<br/>Agent cannot elevate its own permissions."]:::gate
+
+    SO -->|2. Interactive Consent| APP["<b>🛡️ Single-Use Approval Tokens</b><br/>Elevated mutations (files, shell, network)<br/>require your signed authorization."]:::gate
+
+    SO -->|3. Absolute Killswitch| HALT["<b>🛑 Instant Emergency Halt</b><br/>Creating .halt terminates execution in < 50ms<br/>and immediately flushes the audit ledger."]:::gate
+
+    KEY --> RUN["<b>Autonomous Runtime Engine</b>"]:::action
+    APP --> RUN
+    HALT --> RUN
 ```
 
 > [!IMPORTANT]
@@ -33,7 +42,7 @@ To enforce configuration attestation (`LAW10-APPROVAL`), the runtime requires yo
 
 ### 2.1. Generating Your Ed25519 Keypair
 
-Run the following standard command using OpenSSL or Python:
+Run the standard commands using OpenSSL or Python:
 
 ```bash
 # Generate private key
@@ -58,14 +67,39 @@ openssl dgst -sha256 -sign operator_private_key.pem -out config/policy_registry.
 
 The framework classifies all agent actions into 3 risk tiers:
 
-```
-┌──────────────┬──────────────────────────────────────────┬────────────────────────────┐
-│ Tier         │ Examples                                 │ Action Required            │
-├──────────────┼──────────────────────────────────────────┼────────────────────────────┤
-│ **SAFE**     │ Read-only files, query lookups, analysis │ Automatic Execution        │
-│ **ELEVATED** │ File writes, database updates, API POSTs │ Single-Use Operator Token  │
-│ **PROHIBITED**│ Ledger tampering, prompt attacks, bypass │ Hard Block (Unexecutable)  │
-└──────────────┴──────────────────────────────────────────┴────────────────────────────┘
+```mermaid
+stateDiagram-v2
+    [*] --> Evaluation: Agent Proposes Tool Action
+    
+    state Evaluation {
+        [*] --> CheckProhibited
+        CheckProhibited --> Prohibited: Matches rm -rf, drop table, protected paths
+        CheckProhibited --> CheckElevated: Safe from prohibitions
+        CheckElevated --> Elevated: write_file, deploy, terminal, api_mutation
+        CheckElevated --> Safe: read_only, inspect, compute, query
+    }
+
+    state Prohibited {
+        [*] --> DropAction: Hard Block (LAW1-PROHIBIT)
+        DropAction --> LogRefusal: Append to .ledger/events.jsonl
+        LogRefusal --> Exception: Raise GovernanceViolation
+    }
+
+    state Elevated {
+        [*] --> AwaitOperator: Require Single-Use Token (RISK-001)
+        AwaitOperator --> ValidateSig: Operator Supplies Signed Token
+        ValidateSig --> ExecuteApproved: Signature Validated
+        ValidateSig --> RejectElevated: Token Missing / Tampered
+        RejectElevated --> RaiseApprovalRequired
+    }
+
+    state Safe {
+        [*] --> ExecuteDirect: Immediate Execution
+    }
+
+    ExecuteApproved --> LogExecution: Append TOOL_EXECUTED
+    ExecuteDirect --> LogExecution: Append TOOL_EXECUTED
+    LogExecution --> [*]
 ```
 
 ### 3.1. Approving an Elevated Risk Action
@@ -76,11 +110,13 @@ When an agent proposes an action requiring approval, you will receive an interac
 3. **Reasoning Rationale**
 4. **Estimated System Impact**
 
-To approve, generate a single-use authorization token:
-
-```bash
-# Example CLI approval command
-agy-governance approve --action-id "ACT-94821" --key operator_private_key.pem
+To approve, supply an approval token dictionary bound to that specific action ID:
+```python
+approval_token = {
+    "action_id": "ACT-94821",
+    "signature": "operator_signed_token_hex",
+    "timestamp": 1729780000
+}
 ```
 
 ---
@@ -89,13 +125,20 @@ agy-governance approve --action-id "ACT-94821" --key operator_private_key.pem
 
 If an agent exhibits anomalous behavior, enters a recursive loop, or you need to immediately stop execution for any reason, you can trigger an **Emergency Operator Halt**.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           EMERGENCY HALT TRIGGER                            │
-│                                                                             │
-│   Action: Create an empty file named `.halt` in the project root directory  │
-│   Result: All agent threads terminate in < 50ms and flush audit ledgers.    │
-└─────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Operator as Human Operator
+    participant Disk as File System Root
+    participant Kernel as Governance Kernel
+    participant Swarm as Agent Worker Threads
+    participant Ledger as .ledger/events.jsonl
+
+    Operator->>Disk: Create .halt file (touch .halt)
+    Note over Kernel: Next interceptor cycle detects .halt
+    Kernel->>Ledger: Append HALT_TRIGGERED event (LAW2-HALT)
+    Kernel->>Swarm: Terminate worker threads immediately (< 50ms)
+    Kernel-->>Operator: 🛑 Execution Frozen: System Fail-Closed
 ```
 
 ### 4.1. Triggering via Command Line
@@ -108,8 +151,8 @@ New-Item -ItemType File -Path .\.halt -Force
 touch .halt
 ```
 
-### 4.2. Inspecting Post-Halt State
-Upon halting, the runtime writes a `HALT_RECEIPT.json` to the ledger directory with a full snapshot of the stack and reason for shutdown.
+### 4.2. Resuming Execution
+To clear the halt state, only the authorized human operator may delete the `.halt` file. The agent possesses no permissions to delete or modify `.halt` under `LAW3-SUBORDINATE`.
 
 ---
 
@@ -123,19 +166,29 @@ The audit log is structured as a SHA-256 hash chain where each entry includes th
 
 ```json
 {
-  "event_id": "EVT-10023",
-  "timestamp": "2026-08-30T02:40:15Z",
-  "law_invariant": "LAW9-APPEND",
-  "action_type": "TOOL_EXECUTE",
-  "payload_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "timestamp": 1729780512.45,
+  "timestamp_iso": "2026-10-24T14:35:12Z",
+  "event_type": "TOOL_EXECUTED",
+  "law_ref": "LAW9-APPEND",
+  "data": {
+    "tool": "write_file",
+    "tier": "ELEVATED",
+    "duration_ms": 14.2,
+    "payload_keys": ["target_path", "content"]
+  },
   "prev_event_hash": "a54f89b1c78912d88c42a59e1b2c45f8910d54a2b3c4d5e6f7a8b9c0d1e2f3a4",
-  "current_event_hash": "9c8b7a6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b"
+  "event_hash": "9c8b7a6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b"
 }
 ```
 
 To run a full ledger audit:
 ```bash
-python -m autonomous_governance.audit_ledger --ledger-dir .ledger/
+agy-governance audit-ledger
+```
+
+To view current status:
+```bash
+agy-governance status
 ```
 
 ---

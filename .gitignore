@@ -11,6 +11,8 @@ build/
 .venv/
 venv/
 env/
+.pytest_cache/
+.mcp/
 
 # ─── Node / TypeScript ───
 node_modules/

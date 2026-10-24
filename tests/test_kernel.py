@@ -206,3 +206,26 @@ def test_law9_ledger_hash_chain(temp_governance_env):
     assert audit_res["total_events"] == 4
     assert audit_res["broken_links"] == 0
     assert len(audit_res["errors"]) == 0
+
+
+def test_law10_actual_repo_charter_manifest_integrity():
+    """LAW10-CHARTER: Live repository charter documents match config/charter_manifest.json."""
+    repo_root = Path(__file__).resolve().parent.parent
+    manifest_path = repo_root / "config" / "charter_manifest.json"
+    assert manifest_path.exists(), "charter_manifest.json must exist in config/"
+
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    charter_files = manifest.get("charter_files", {})
+    assert len(charter_files) == 3, "Manifest must cover all 3 charter documents"
+
+    for file_name, expected_hash in charter_files.items():
+        file_path = repo_root / file_name
+        assert file_path.exists(), f"Charter file {file_name} missing from repo root"
+        computed_hash = GovernanceKernel._compute_sha256(file_path)
+        assert computed_hash.lower() == expected_hash.lower(), (
+            f"Digest mismatch for {file_name}: "
+            f"expected {expected_hash}, got {computed_hash}"
+        )
+

@@ -1,12 +1,12 @@
 {
-  "version": "3.2.0",
+  "version": "3.2.1",
   "algorithm": "SHA-256",
-  "generated_at": "2026-08-30T03:24:00Z",
-  "generated_by": "Antigravity AI — Charter Integrity System",
+  "generated_at": "2026-10-24T13:55:00Z",
+  "generated_by": "Kirk LaSalle (Supreme Operator) & Antigravity AI — Charter Integrity System",
   "charter_files": {
     "Permanent_Active_Directives.txt": "7cd55c2999deef3e2c7527a0b7a935c8350c504b8052b158b6eaa077e5e11b4a",
-    "AGENTIC_PRIME_DIRECTIVE.md": "43ee7623c18c81e6b279e2a119bf8920ab055e7ee3d36dac82caf1b4c4ba0745",
-    "AGENTIC_SACRED_COVENANT.md": "1445db0ca09e69dc13a830b10799016dbd065e0aaa4bb314b2d918322a33f3e4"
+    "AGENTIC_PRIME_DIRECTIVE.md": "6001d6203076586dac198160aeaf2e012234a0f70594dc43b9743ee98d043a7b",
+    "AGENTIC_SACRED_COVENANT.md": "7e36dce36864aec185d1652de66fc9a410489404781a49f6017c7fa3e19076f9"
   },
   "invariants_enforced": [
     "LAW10-CHARTER",

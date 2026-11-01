@@ -2,6 +2,7 @@
 Autonomous Governance Laws — CLI Entry Point
 
 Usage:
+    agy-governance init          Install the charter into a project (byte-exact, verified)
     agy-governance verify        Verify charter file integrity (LAW10-CHARTER)
     agy-governance audit-ledger  Verify event ledger hash chain (LAW9-CHAIN)
     agy-governance status        Show governance kernel status summary
@@ -247,6 +248,59 @@ def cmd_approve(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_init(args: argparse.Namespace) -> int:
+    """Install the charter (three documents + manifest) into a project, byte-for-byte."""
+    from autonomous_governance.installer import CharterSourceError, charter_source, install_charter
+
+    try:
+        source = charter_source()
+        result = install_charter(
+            args.target, force=args.force, loaders=args.loaders, dry_run=args.dry_run, source=source
+        )
+    except (CharterSourceError, OSError) as exc:
+        print(f"  ❌ {exc}")
+        return 1
+
+    print("=" * 68)
+    print("  CHARTER INSTALLATION — LAW10-CHARTER" + ("  (dry run)" if args.dry_run else ""))
+    print("=" * 68)
+    print(f"  Source:  {source} (charter v{result.version})")
+    print(f"  Target:  {result.target}")
+    print()
+
+    notes = {
+        "conflict": "differs from the charter; nothing written. Re-run with --force to replace it",
+        "overwrite": "replaced (--force)",
+        "equivalent": "line endings differ only; verifies unchanged",
+        "exists": "kept as-is; loaders never overwrite. Add the loader text manually",
+    }
+    for planned in result.files:
+        status = f"would {planned.status}" if args.dry_run and planned.writes else planned.status
+        note = notes.get(planned.status)
+        print(f"  {status:<16} {planned.rel}" + (f"  ({note})" if note else ""))
+    print()
+
+    if result.conflicts:
+        print(f"  ❌ {len(result.conflicts)} conflicting file(s); target left unchanged.")
+        return 1
+    if args.dry_run:
+        print("  ✅ Plan is clean. Re-run without --dry-run to apply it.")
+        return 0
+    if not result.ok:
+        failed = ", ".join(c.name for c in result.checks if not c.ok) or "no charter files"
+        print(f"  ❌ Post-install verification failed: {failed}")
+        return 1
+
+    changed = any(planned.writes for planned in result.files)
+    verdict = "installed and verified" if changed else "already installed; verified, nothing changed"
+    print(f"  ✅ Charter {verdict} ({len(result.checks)} documents).")
+    print()
+    print("  Next steps:")
+    print("    agy-governance keygen     # pin an operator key; elevated actions fail closed without one")
+    print("    agy-governance verify     # re-check the charter at any time")
+    return 0
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="agy-governance",
@@ -267,6 +321,18 @@ def main() -> None:
 
     # verify
     subparsers.add_parser("verify", help="Verify charter integrity (LAW10-CHARTER)")
+
+    # init
+    p_init = subparsers.add_parser(
+        "init", help="Install the charter documents and manifest into a project (byte-exact)"
+    )
+    p_init.add_argument("--target", default=".", help="Project directory to install into (default: current)")
+    p_init.add_argument("--force", action="store_true", help="Replace charter files that differ")
+    p_init.add_argument(
+        "--loaders", action="store_true",
+        help="Also write host loaders (AGENTS.md, CLAUDE.md, .agents/rules/); never overwrites",
+    )
+    p_init.add_argument("--dry-run", action="store_true", help="Show the plan without writing anything")
 
     # audit-ledger
     subparsers.add_parser("audit-ledger", help="Audit event ledger hash chain (LAW9-CHAIN)")
@@ -298,6 +364,7 @@ def main() -> None:
 
     commands = {
         "verify": cmd_verify,
+        "init": cmd_init,
         "audit-ledger": cmd_audit_ledger,
         "status": cmd_status,
         "badge": cmd_badge,

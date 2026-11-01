@@ -24,8 +24,13 @@ Runtime hardening (P0 defects from the audit) plus documentation and tooling. Th
 - Executor exceptions are logged as `TOOL_FAILED` before re-raising. `ACTION_REFUSED`, `APPROVAL_REQUIRED` and `TOOL_EXECUTED` events record a `payload_sha256`.
 
 ### Added
-- **`tests/test_hardening.py`**: regression tests for every fix above, including a 3-process concurrent-append test and a parametrised classifier battery.
-- Public API: `check_charter_files`, `CharterCheck`, `resolve_project_root`.
+- **`agy-governance init [--target DIR] [--force] [--loaders] [--dry-run]`** (P19): installs the three charter documents and `config/charter_manifest.json` into a project byte-for-byte, then verifies them.
+  - The wheel and sdist now ship the reference charter (`autonomous_governance/charter/`). The source copy is verified before anything is copied.
+  - Every change is planned first. A differing file is a conflict and nothing is written unless `--force` is given; files that differ only in line endings count as installed.
+  - `--loaders` also writes host instruction loaders (`AGENTS.md`, `CLAUDE.md`, `.agents/rules/agl-*.md`) that reference the charter without paraphrasing it. Existing files are never overwritten.
+- **Host loaders for this repository**: `AGENTS.md` (with a contributor section), `CLAUDE.md`, and `.agents/rules/`. They are generated from `src/autonomous_governance/loaders.py`, and a test fails if they drift.
+- **`tests/test_hardening.py`**: regression tests for every fix above, including a 3-process concurrent-append test and a parametrised classifier battery. **`tests/test_init.py`**: installer, CLI, loader-drift and packaging tests.
+- Public API: `check_charter_files`, `CharterCheck`, `resolve_project_root`, `install_charter`, `charter_source`, `CharterSourceError`, `render_loaders`.
 - **[`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md)**: evidence-based engineering audit.
   - Reproducible rubric; composite score **39/100** (≈70 projected after P0/P1).
   - 19 probe-backed findings (P1–P19).

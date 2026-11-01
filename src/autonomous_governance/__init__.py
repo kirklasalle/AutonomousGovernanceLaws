@@ -47,6 +47,12 @@ from autonomous_governance.linter import (
     ConstitutionalLinter,
     GovernanceLinter,
 )
+from autonomous_governance.installer import (
+    CharterSourceError,
+    charter_source,
+    install_charter,
+)
+from autonomous_governance.loaders import render_loaders
 
 __version__ = "0.1.0"
 __author__ = "Kirk LaSalle"
@@ -66,5 +72,9 @@ __all__ = [
     "audit_repository_compliance",
     "ConstitutionalLinter",
     "GovernanceLinter",
+    "CharterSourceError",
+    "charter_source",
+    "install_charter",
+    "render_loaders",
 ]
 

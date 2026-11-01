@@ -60,6 +60,14 @@ pythonpath = ["src"]
 [tool.hatch.build.targets.wheel]
 packages = ["src/autonomous_governance"]
 
+# Ship the reference charter inside the wheel so `agy-governance init` can install it
+# byte-for-byte. Must match config/charter_manifest.json (tests/test_init.py checks this).
+[tool.hatch.build.targets.wheel.force-include]
+"Permanent_Active_Directives.txt" = "autonomous_governance/charter/Permanent_Active_Directives.txt"
+"AGENTIC_PRIME_DIRECTIVE.md" = "autonomous_governance/charter/AGENTIC_PRIME_DIRECTIVE.md"
+"AGENTIC_SACRED_COVENANT.md" = "autonomous_governance/charter/AGENTIC_SACRED_COVENANT.md"
+"config/charter_manifest.json" = "autonomous_governance/charter/config/charter_manifest.json"
+
 [tool.hatch.build.targets.sdist]
 include = [
     "/src",
@@ -67,4 +75,8 @@ include = [
     "/README.md",
     "/LICENSE",
     "/pyproject.toml",
+    "/Permanent_Active_Directives.txt",
+    "/AGENTIC_PRIME_DIRECTIVE.md",
+    "/AGENTIC_SACRED_COVENANT.md",
+    "/config/charter_manifest.json",
 ]

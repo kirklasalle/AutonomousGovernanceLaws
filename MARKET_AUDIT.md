@@ -1,10 +1,25 @@
 # MARKET LANDSCAPE & COMPETITIVE POSITIONING AUDIT
 
-**Document Version:** 1.0.0
-**Date:** August 30, 2026
-**Auditor:** Antigravity AI — Strategic Market Intelligence
-**Classification:** Strategic — Investor & Partner Ready
-**Target Framework:** Autonomous Governance Laws (Kirk LaSalle, Founder)
+**Document Version:** 2.0.0
+**Date:** November 1, 2026
+**Prepared for:** Kirk LaSalle, Founder & Supreme Operator
+**Classification:** Strategic — Investor & Partner Ready (evidence-based revision)
+**Supersedes:** v1.0.0 (August 30, 2026); retained in git history
+**Companion:** [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md), the engineering findings behind every capability statement below
+
+> [!IMPORTANT]
+> **What changed since v1.0.0.**
+> - Every market, regulatory, and competitor figure is now tied to a cited source; 51 of 55 URLs were verified at HTTP 200 via the project-local MCP fleet (see §8).
+> - **Corrected:**
+>   - The EU AI Act high-risk dates moved to **2 Dec 2027 / 2 Aug 2028**.
+>   - Incident reporting is **Art. 73**, not Art. 62.
+>   - OWASP's agentic list is the **Top 10 for Agentic Applications 2026 (ASI01–ASI10)**, not a "Top 17".
+>   - NIST's effort is the **AI Agent Standards Initiative**; "AASI" is not NIST nomenclature.
+> - **Withdrawn:**
+>   - "88% of organizations breached" and "Gartner 40% decommission" (no traceable source).
+>   - "90% EU AI Act / 100% NIST alignment" (no article-level evidence).
+>   - "Merkle ledger" and "post-quantum preparedness" (not implemented).
+>   - "Only runtime-enforced constitutional framework" (false since Microsoft's Agent Governance Toolkit).
 
 ---
 
@@ -12,356 +27,256 @@
 
 1. [Executive Market Summary](#1-executive-market-summary)
 2. [Market Overview & Sizing](#2-market-overview--sizing)
-3. [Regulatory Alignment Matrix](#3-regulatory-alignment-matrix)
+3. [Regulatory & Standards Landscape](#3-regulatory--standards-landscape)
 4. [Competitive Landscape Analysis](#4-competitive-landscape-analysis)
 5. [Differentiation Analysis](#5-differentiation-analysis)
 6. [SWOT Analysis](#6-swot-analysis)
 7. [Strategic Positioning Recommendations](#7-strategic-positioning-recommendations)
+8. [Sources & Verification](#8-sources--verification)
 
 ---
 
 ## 1. EXECUTIVE MARKET SUMMARY
 
-The Autonomous Governance Laws framework enters the AI governance market at an inflection point. Regulatory enforcement has crossed from voluntary to mandatory (EU AI Act full application: August 2, 2026). Enterprise demand has shifted from "monitoring model outputs" to "governing autonomous agents." And 88% of organizations report AI agent security breaches — yet fewer than 20% have formal governance frameworks in place.
+**Market.** AI governance is a small, fast-growing category. Gartner sizes **AI governance platform** spend at **$492M in 2026**, passing **$1B by 2030** [M1]. Broader "AI governance market" estimates for 2026 cluster around **$418–419M**, with **34–36% CAGR** [M2][M3]. The widest definitions reach ~$0.9B (2024) at 45% CAGR [M4]. Interception of agent tool calls, policy-as-code, and tamper-evident logging are now **table stakes**: Microsoft, AWS, and Google bundle them with their agent platforms [C7][C8][C9].
 
-**The market is desperate for exactly what this framework provides:** a constitutional, cryptographically enforced, framework-agnostic governance architecture for autonomous AI agents.
+**Regulation.** The EU **AI Omnibus** entered into force on **27 July 2026** and postponed high-risk obligations:
+- **Annex III** systems now apply from **2 December 2027**.
+- **Annex I** (product-embedded) systems apply from **2 August 2028** [R1][R2].
 
-The critical question is not whether the market needs this — it does — but whether Kirk LaSalle's framework can move from specification to deployable infrastructure fast enough to capture the window.
+The OWASP **Top 10 for Agentic Applications 2026** has become the de facto risk checklist [R8]. **MCP 2026-07-28** is the current agent-tool protocol [R14].
+
+**AGL's position (November 2026).** AGL is a **pre-alpha, single-maintainer, Apache-2.0 Python library** (0.1.0, not yet on PyPI). It occupies a narrow but real niche: a **local-first "constitutional kernel"** that pins its governing charter by SHA-256 and gates elevated agent actions behind **payload-bound, single-use Ed25519 operator approvals**. These two ideas are genuinely uncommon in the market.
+
+However, the November 2026 engineering audit found that, **in the default configuration, an agent can approve its own elevated actions**, and that the hash-chained ledger breaks across restarts and under concurrency. The composite engineering score is **39/100**; see [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md).
+
+AGL therefore **cannot yet be credibly positioned against commercial or hyperscaler offerings**. It *can* be positioned, after P0 remediation, as an embeddable policy-and-evidence component.
+
+**Window.** The EU high-risk delay gives roughly **13 months** (to Dec 2027) to:
+1. fix the critical defects;
+2. publish to PyPI;
+3. ship an OWASP ASI mapping and an Art. 12/14 evidence exporter.
+
+That is achievable for a library of AGL's size.
 
 ---
 
 ## 2. MARKET OVERVIEW & SIZING
 
-### 2.1. Total Addressable Market
+### 2.1 Verified market estimates
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    AI GOVERNANCE MARKET — 2026 SNAPSHOT                      │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  Core AI Governance Market (2026):          $400M — $500M                   │
-│  Broader AI Security & Compliance (2026):   ~$3.0B                          │
-│  CAGR (2026–2032):                          28% — 45%                       │
-│  Projected Market (2032):                   $4B — $12B (segment-dependent)  │
-│                                                                             │
-│  Fastest-Growing Segments:                                                  │
-│    • Agent-Native Security Platforms        ~55% CAGR                       │
-│    • Runtime Guardrails & Enforcement       ~42% CAGR                       │
-│    • Compliance Automation (EU AI Act)      ~38% CAGR                       │
-│                                                                             │
-│  Regional Share:                                                            │
-│    • North America:                         ~45% of revenue                 │
-│    • Europe:                                ~30% (EU AI Act-driven)         │
-│    • Asia-Pacific:                          ~18% (fastest growth)           │
-│                                                                             │
-│  Source: Grand View Research, Mordor Intelligence, Precedence Research,     │
-│          Gartner, Fortune Business Insights — compiled August 2026          │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+| Source | Scope | Base | Forecast | CAGR | Verification |
+|---|---|---|---|---|---|
+| **Gartner** (17 Feb 2026) [M1] | AI governance **platforms** (spend) | **$492M (2026)** | > $1B (2030) | — | Publisher blocks automation (403); corroborated by multiple secondary reports |
+| **Grand View Research** [M2] | AI governance market | $308.3M (2025) → **$417.8M (2026)** | $3.59B (2033) | **36.0%** | ✅ MCP |
+| **Precedence Research** [M3] | AI governance market | **$419.45M (2026)** | $5.88B (2035) | **34.27%** | ✅ MCP |
+| **MarketsandMarkets** [M4] | AI governance (broad) | $0.89B (2024) | $5.78B (2029) | **45.3%** | 403; secondary corroboration |
 
-### 2.2. Market Demand Drivers
+**How to quote it.** Say "**≈ $0.4–0.5B in 2026, growing ~34–45% annually**", and always name the source and scope. The spread reflects definitions: platform software only, versus software plus services, versus inclusion of GRC.
 
-| Driver | Impact | Alignment to 10 Laws |
-|---|:---:|---|
-| EU AI Act enforcement (Aug 2, 2026) | 🔴 Critical | Laws 1, 6, 7, 9 directly map to mandatory requirements |
-| NIST AI Agent Standards Initiative (Feb 2026) | 🟡 High | Laws 9, 10 align with agent identity & observability pillars |
-| OWASP Top 17 Threats for Agentic Systems (Dec 2025) | 🟡 High | Laws 4, 10 address delegation attacks & spawn control |
-| 88% enterprise agent security breach rate | 🔴 Critical | Full framework addresses root causes |
-| Gartner: 40% of enterprises will decommission agents by 2027 due to governance failures | 🔴 Critical | Framework is designed to prevent exactly this outcome |
-| "Shadow AI" exposure gap | 🟡 High | Law 9 (transparent ledger) provides audit trail |
-| Chief Trust Officer / Chief AI Officer role emergence | 🟢 Medium | Framework provides the governance substrate these roles need |
+### 2.2 Where AGL's addressable slice sits
 
-### 2.3. Market Timing Assessment
+AGL addresses the **developer-embedded runtime-enforcement** slice: libraries and gateways that sit in the agent's tool-call path. Most of this slice is captured by free or bundled offerings: hyperscaler platforms, NeMo Guardrails, Docker MCP Gateway, and Microsoft's Agent Governance Toolkit.
 
-**Verdict: OPTIMAL WINDOW — 12 TO 18 MONTHS**
-
-The EU AI Act enforcement date (August 2, 2026) has created a compliance scramble. Most enterprises are discovering their existing governance tools were designed for static model risk, not autonomous agents. The market is actively seeking:
-- Constitutional frameworks that can be adopted as internal governance policy
-- Runtime enforcement middleware that can wrap existing agent deployments
-- Audit trail infrastructure that satisfies Article 12 (record-keeping) and Article 14 (human oversight) requirements
-
-The Autonomous Governance Laws framework is architecturally positioned to address all three. But the window will narrow as incumbent vendors (Arthur, NVIDIA, Microsoft) expand their offerings.
+Realistic monetisation paths for an OSS kernel in this slice are:
+1. support and assurance contracts for regulated or air-gapped users;
+2. a hosted evidence/attestation service;
+3. acquisition by a security platform. The 2025–26 consolidation pattern (§4.3) shows this is how most guardrail start-ups have exited.
 
 ---
 
-## 3. REGULATORY ALIGNMENT MATRIX
+## 3. REGULATORY & STANDARDS LANDSCAPE
 
-### 3.1. EU AI Act Mapping
+### 3.1 Status as of 1 November 2026
 
-The EU AI Act (Regulation 2024/1689) became applicable August 2, 2026. Key requirements for high-risk AI systems:
+| Instrument | Status | Relevance to AGL | Source |
+|---|---|---|---|
+| **EU AI Act** (Reg. 2024/1689) + **AI Omnibus** | Omnibus in force 27 Jul 2026. Art. 50 transparency since 2 Aug 2026. **Annex III high-risk: 2 Dec 2027**; **Annex I: 2 Aug 2028** | Evidence for **Art. 12** (record-keeping), **Art. 14** (human oversight), **Art. 15** (robustness/cybersecurity), **Art. 73** (serious-incident reporting) | [R1][R2][R3][R4] |
+| **NIST AI RMF 1.0** / **AI 600-1** | Voluntary frameworks (Jan 2023 / Jul 2024) | *Govern* and *Manage* functions | [R5][R6] |
+| **NIST AI Agent Standards Initiative** (CAISI) | Launched 17 Feb 2026; RFI on agent security | An initiative, **not** a conformance standard; no "% alignment" is meaningful | [R7] |
+| **OWASP Top 10 for Agentic Applications 2026** | ASI01–ASI10; published 9 Dec 2025, v2.01 1 Jun 2026 | Becoming a procurement checklist; AGL maps partially (§5.3) | [R8] |
+| OWASP Agentic AI: Threats & Mitigations | T1–T15 taxonomy | Threat-model reference | [R9] |
+| **ISO/IEC 42001:2023** | AI management-system standard | Organisational, not product, certification | [R10] |
+| **Colorado** | SB 24-205 replaced by SB 26-189; effective 1 Jan 2027 (re-verify statute) | Disclosure/transparency duties for deployers | [R11] |
+| **California SB 53** | Signed 29 Sep 2025; effective 1 Jan 2026 | Frontier-model developers; indirect | [R12] |
+| **Singapore IMDA** Model AI Governance Framework for **Agentic AI** | 22 Jan 2026 (updated May 2026); voluntary | Strong match to AGL concepts: bounded risk, human accountability, logging | [R13] |
+| **MCP specification** | **2026-07-28** current (stateless requests, per-request capability negotiation); 2025-11-25 prior | Natural integration point for a per-request policy kernel | [R14][R15] |
+| **FIPS 186-5 / RFC 8032** (EdDSA), **FIPS 204** (ML-DSA) | Final | AGL uses Ed25519 (classical). ML-DSA is a roadmap item, **not** implemented | [R16][R17][R18] |
 
-```
-┌──────────────────────────────────────────────────────────────────────────────────────┐
-│                   EU AI ACT → 10 LAWS REGULATORY ALIGNMENT                           │
-├────────────────────────────────┬────────────────────────┬────────────────────────────┤
-│ EU AI Act Requirement          │ Article                │ 10 Laws Alignment          │
-├────────────────────────────────┼────────────────────────┼────────────────────────────┤
-│ Risk Management System         │ Article 9              │ Law 1 (Non-Harm) + RISK-001│
-│ Data Governance                │ Article 10             │ Law 6 (Data Sanctity)      │
-│ Technical Documentation        │ Article 11             │ Law 9 (Ledger) + PRD       │
-│ Record-Keeping & Logging       │ Article 12             │ Law 9 (Append-Only Ledger) │
-│ Transparency to Users          │ Article 13             │ Law 7 (Non-Deception)      │
-│ Human Oversight                │ Article 14             │ Law 2 (Obedience) + HALT   │
-│ Accuracy, Robustness, Security │ Article 15             │ Law 10 (Boundaries) + SHA  │
-│ Notification of Incidents      │ Article 62             │ Law 9 (Transparent Ledger) │
-│ Fundamental Rights Assessment  │ Article 27             │ Law 8 (Equity & Neutrality)│
-│ AI Literacy                    │ Article 4              │ Core Tenets (Growth)       │
-│ Loss-of-Control Risk           │ Recitals               │ Law 2 (HALT) + Law 10      │
-└────────────────────────────────┴────────────────────────┴────────────────────────────┘
+### 3.2 Compliance language guidance
 
-Alignment Score: 9 of 10 articles have direct Law mappings = 90% structural alignment
-```
+AGL is a component. It **cannot make a system compliant**, and no alignment percentage should be published. The supportable statement is:
 
-### 3.2. NIST AI Agent Standards Initiative (AASI) Mapping
-
-```
-┌──────────────────────────────────────────────────────────────────────────────────────┐
-│                    NIST AASI → 10 LAWS ALIGNMENT                                     │
-├────────────────────────────────┬─────────────────────────────────────────────────────┤
-│ NIST Pillar                    │ 10 Laws Alignment                                   │
-├────────────────────────────────┼─────────────────────────────────────────────────────┤
-│ Agent Identity & Authentication│ Law 10 (Ed25519 attestation, CAC tokens)            │
-│ Authorization & Scope          │ Law 10 (Spawn gates) + Law 3 (Self-constraint)      │
-│ Observability Infrastructure   │ Law 9 (SHA-256 Merkle ledger)                       │
-│ Hard Rollback / Kill Switch    │ Law 2 (LAW2-HALT, <50ms termination)                │
-│ Attribute-Based Access Control │ RISK-001 (3-Tier Policy Engine)                     │
-│ Security & Identity Research   │ NFR-05 (Post-quantum crypto preparedness)           │
-└────────────────────────────────┴─────────────────────────────────────────────────────┘
-
-Alignment Score: 6 of 6 pillars directly addressed = 100% structural alignment
-```
-
-### 3.3. OWASP Top 17 Threats for Agentic Systems Mapping
-
-```
-┌──────────────────────────────────────────────────────────────────────────────────────┐
-│              OWASP AGENTIC THREATS → 10 LAWS DEFENSE                                 │
-├────────────────────────────────────┬─────────────────────────────────────────────────┤
-│ OWASP Threat                       │ 10 Laws Defense                                 │
-├────────────────────────────────────┼─────────────────────────────────────────────────┤
-│ Prompt Injection                   │ LAW1-PROHIBIT (runtime interception, not prompt) │
-│ Tool Misuse                        │ RISK-001 (3-Tier classification)                 │
-│ Memory Poisoning                   │ LAW9-APPEND (immutable append-only logs)         │
-│ Insecure Inter-Agent Protocols     │ Law 4 (Cross-system enforcement, CAC tokens)     │
-│ Unauthorized Delegation            │ Law 10 (Spawn gate, attestation tokens)          │
-│ Goal Hijacking                     │ Law 2 (Operator supremacy, halt override)        │
-│ Excessive Permissions              │ Law 3 (Self-constraint) + RISK-001               │
-│ Cascading Failures                 │ Law 9 (Graceful fallback to stable state)        │
-│ Data Exfiltration                  │ Law 6 (Data sanctity, sandboxed I/O)             │
-│ Sycophantic Compliance             │ Quaternary Directive (contrarian mandate)         │
-└────────────────────────────────────┴─────────────────────────────────────────────────┘
-
-Coverage: 10 of 17 threats have direct architectural defense = 59% coverage
-Note: Remaining 7 threats require runtime implementation to assess
-```
+> *"AGL produces hash-chained action logs and cryptographically signed human approvals that can serve as **evidence** toward EU AI Act Articles 12 and 14 and OWASP ASI02, ASI05, ASI09, and ASI10 controls, subject to the known limitations listed in WORLD_CLASS_AUDIT_2026-11.md."*
 
 ---
 
 ## 4. COMPETITIVE LANDSCAPE ANALYSIS
 
-### 4.1. Market Segmentation & Competitor Map
+### 4.1 Capability matrix
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│               AI GOVERNANCE COMPETITIVE LANDSCAPE (2026)                    │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  CONSTITUTIONAL / FRAMEWORK LAYER (where 10 Laws compete)                  │
-│  ┌─────────────────────────────────────────────────────────────────┐       │
-│  │  ★ Autonomous Governance Laws (Kirk LaSalle)                    │       │
-│  │  • Aegis Research Architecture (arxiv.org)                      │       │
-│  │  • Microsoft Agent Governance Toolkit (open-source)             │       │
-│  └─────────────────────────────────────────────────────────────────┘       │
-│                                                                             │
-│  RUNTIME ENFORCEMENT LAYER                                                  │
-│  ┌─────────────────────────────────────────────────────────────────┐       │
-│  │  • NVIDIA NeMo Guardrails                                       │       │
-│  │  • Guardrails AI                                                │       │
-│  │  • Lakera Guard                                                 │       │
-│  │  • Bifrost Gateway (open-source)                                │       │
-│  └─────────────────────────────────────────────────────────────────┘       │
-│                                                                             │
-│  OBSERVABILITY & MONITORING LAYER                                           │
-│  ┌─────────────────────────────────────────────────────────────────┐       │
-│  │  • LangSmith (LangChain)                                        │       │
-│  │  • Langfuse (open-source)                                       │       │
-│  │  • AgentOps                                                     │       │
-│  │  • Arize Phoenix                                                │       │
-│  │  • Helicone                                                     │       │
-│  └─────────────────────────────────────────────────────────────────┘       │
-│                                                                             │
-│  ENTERPRISE PLATFORM LAYER                                                  │
-│  ┌─────────────────────────────────────────────────────────────────┐       │
-│  │  • Arthur AI                                                    │       │
-│  │  • NeuralTrust                                                  │       │
-│  │  • General Analysis                                             │       │
-│  │  • AccuKnox                                                     │       │
-│  │  • Microsoft Agent 365                                          │       │
-│  │  • OneTrust                                                     │       │
-│  └─────────────────────────────────────────────────────────────────┘       │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+Legend: ✅ native · ◐ partial / conditional · ❌ absent. Competitor columns are taken from public vendor documentation and were not independently tested. AGL columns reflect measured behaviour at revision `1a0f616`.
 
-### 4.2. Head-to-Head Comparison
+| Offering | Model | Pre-exec tool-call intercept | Signed single-use human approval | Tamper-evident log | Kill switch | Policy-as-code | Regulatory mapping | Agent identity | Distribution |
+|---|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|---|
+| **AGL 0.1.0** | OSS, Apache-2.0 | ◐ evadable | ◐ **bypassable by default** | ◐ hash chain, resets per boot | ◐ `.halt`, next call | ❌ | ❌ | ❌ | GitHub source |
+| **Microsoft Agent Governance Toolkit** [C4] | OSS, MIT, Public Preview | ✅ | ◐ | ✅ | ◐ | ✅ | ◐ (OWASP ASI: 7 full / 3 partial, self-reported) | ✅ | PyPI / npm / NuGet |
+| Microsoft Agent 365 + Entra Agent ID [C7] | Commercial, GA May 2026 | ✅ | ◐ | ✅ | ◐ | ✅ | ◐ | ✅ | SaaS |
+| AWS Bedrock AgentCore Policy [C8] | Commercial (Cedar OSS) | ✅ | ◐ | ✅ | ◐ | ✅ Cedar | ◐ | ✅ | Cloud |
+| Google Model Armor / Agent Engine [C9] | Commercial | ✅ | ◐ | ✅ | ◐ | ✅ | ◐ | ✅ | Cloud |
+| NVIDIA NeMo Guardrails [C1] | OSS, Apache-2.0 | ✅ | ◐ hook | ◐ OTel | ❌ | ✅ Colang | ❌ | ❌ | PyPI |
+| Docker MCP Gateway [C3] | OSS | ✅ MCP | ◐ | ✅ | ◐ | ✅ | ❌ | ◐ | Docker |
+| OPA / Cedar [C2][C5] | OSS policy engines | ✅ as backend | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | Binaries / crates |
+| Zenity [C10] | Commercial | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ | SaaS |
+| Credo AI · Holistic AI · IBM watsonx.governance · OneTrust · ServiceNow | Commercial GRC | ◐ | ◐ | ✅ | ❌ | ◐ | ✅ | ◐ | SaaS |
 
-| Capability | 10 Laws (AGL) | NVIDIA NeMo | Arthur AI | MS Agent Toolkit | Guardrails AI |
-|---|:---:|:---:|:---:|:---:|:---:|
-| **Constitutional Framework** | ★★★★★ | ★★☆☆☆ | ★★★☆☆ | ★★★☆☆ | ★★☆☆☆ |
-| **Philosophical Grounding** | ★★★★★ | ★☆☆☆☆ | ★★☆☆☆ | ★★☆☆☆ | ★☆☆☆☆ |
-| **Cryptographic Enforcement** | ★★★★★ (design) | ★☆☆☆☆ | ★★☆☆☆ | ★★★☆☆ | ★☆☆☆☆ |
-| **Runtime Interception** | ★★☆☆☆ (code sample) | ★★★★★ | ★★★★☆ | ★★★★☆ | ★★★★★ |
-| **Append-Only Audit Trail** | ★★★★★ (design) | ★★☆☆☆ | ★★★★☆ | ★★★☆☆ | ★★☆☆☆ |
-| **Framework Agnosticism** | ★★★★★ | ★★☆☆☆ | ★★★☆☆ | ★★★★☆ | ★★★★☆ |
-| **Human Oversight / Kill Switch** | ★★★★★ (design) | ★★★☆☆ | ★★★★☆ | ★★★★☆ | ★★☆☆☆ |
-| **Gap Transparency** | ★★★★★ | ★☆☆☆☆ | ★★☆☆☆ | ★★★☆☆ | ★☆☆☆☆ |
-| **Deployable SDK** | ☆☆☆☆☆ | ★★★★★ | ★★★★★ | ★★★★☆ | ★★★★★ |
-| **Community & Ecosystem** | ☆☆☆☆☆ | ★★★★★ | ★★★★☆ | ★★★★☆ | ★★★★☆ |
+### 4.2 Closest comparator: Microsoft Agent Governance Toolkit
 
-**Key Insight:** The Autonomous Governance Laws lead in *design* categories (constitutional framework, philosophy, cryptographic design, gap transparency, framework agnosticism) but trail significantly in *execution* categories (deployable SDK, community, runtime implementation). This is a classic "innovator's dilemma" position — the architecture is ahead of the market, but the implementation is behind competitors.
+| Dimension | AGL 0.1.0 | Microsoft AGT (Public Preview) |
+|---|---|---|
+| Licence | Apache-2.0 | MIT |
+| Languages / distribution | Python, source only | Multi-language; PyPI, npm, NuGet |
+| Scope | Charter integrity, 3-tier gate, signed approvals, hash-chained ledger, halt, linter, badge | Policy enforcement, identity, sandboxing, SRE |
+| Distinctive feature | **SHA-256-pinned constitutional charter**; **payload-bound single-use Ed25519 approvals** | Breadth, identity integration, OWASP ASI mapping, OpenSSF badges |
+| Maturity signals | 22 tests, 52% coverage, CI; critical defects open | OpenSSF Scorecard + Best Practices badges |
 
-### 4.3. Competitive Moat Analysis
+**Implication.** Competing head-on with AGT on breadth is not viable. AGL's credible play is depth on the two distinctive features, plus interoperability, potentially including an adapter that lets AGL's charter-pinning and signed-approval primitives run *inside* AGT- or MCP-gateway-based deployments.
 
-**Defensible Advantages (True Moats):**
-1. **The 10 Laws as Original IP** — No competitor has an equivalent constitutional framework. NVIDIA NeMo has guardrails; Arthur has monitoring. Nobody has a codified legal-philosophical foundation for agent governance.
-2. **Radical Gap Transparency** — The explicit admission of uninstrumented capabilities (Laws 5 & 8) is unique in the industry. Competitors claim comprehensive coverage; the 10 Laws claim what they can prove.
-3. **Framework Agnosticism** — Unlike NVIDIA NeMo (tied to NeMo/NVIDIA stack) or LangSmith (tied to LangChain), the 10 Laws architecture is intentionally runtime-independent.
+### 4.3 Consolidation & funding signals (2025–2026)
 
-**Non-Defensible Advantages (Time-Limited):**
-1. **Architectural Design** — Microsoft's Agent Governance Toolkit is converging on similar patterns (runtime interception, tool-gating). The design advantage narrows with each quarter.
-2. **Asimovian Branding** — Competitors could adopt similar philosophical framing. The brand must be established before imitation begins.
+| Date | Event | Value | Source |
+|---|---|---|---|
+| Jun 2025 | Snyk acquires Invariant Labs | undisclosed | [C12] |
+| Jul 2025 | Palo Alto Networks completes Protect AI acquisition | ~$700M | [C14] |
+| Sep 2025 | Check Point acquires Lakera | ~$300M | [C13] |
+| Sep 2025 | F5 to acquire CalypsoAI | ~$180M | [C15] |
+| Apr 2026 | Cisco to acquire Galileo | undisclosed | [C16] |
+| May 2026 | Microsoft Agent 365 GA | — | [C7] |
+| Jun 2026 | Straiker Series A | $64M | [C17] |
+| Aug 2026 | Zenity Series C | $125M | [C10] |
+| Sep 2026 | Guardrails AI joins Harvey | undisclosed | [C11] |
+
+Standalone guardrail vendors are being absorbed into security and vertical platforms, and hyperscalers are bundling equivalent controls. Differentiation through rigour and interoperability matters more than feature breadth.
 
 ---
 
 ## 5. DIFFERENTIATION ANALYSIS
 
-### 5.1. Unique Value Proposition
+### 5.1 Genuine differentiators (verified in code)
 
-No other governance framework in the 2026 market combines all five of these properties:
+1. **Content-addressed constitutional charter.** Three governing documents are pinned by LF-normalised SHA-256 in [`config/charter_manifest.json`](config/charter_manifest.json) and verified at kernel boot and in CI. None of the surveyed vendors markets this.
+2. **Payload-bound, expiring, single-use Ed25519 approvals (AGL-V1).** The signature covers the tool name and a canonical payload digest, so what the operator signs is exactly what executes. This mitigates OWASP ASI09 (human-agent trust exploitation). It is correct **when an operator public key is pinned**.
+3. **Zero runtime dependencies, offline, ~1.7k LOC.** It is auditable in an afternoon and suits air-gapped and sovereign deployments.
+4. **Sub-millisecond overhead.** Measured at 0.49 ms (SAFE) and 0.71 ms (signed ELEVATED).
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    UNIQUE VALUE PROPOSITION PENTAGON                         │
-│                                                                             │
-│                         ┌────────────┐                                      │
-│                         │ PHILOSOPHY │                                      │
-│                         │  10 Laws   │                                      │
-│                         └──────┬─────┘                                      │
-│                    ┌───────────┴───────────┐                                │
-│              ┌─────┴─────┐           ┌─────┴─────┐                          │
-│              │  RADICAL  │           │ FRAMEWORK │                          │
-│              │TRANSPARENCY           │ AGNOSTIC  │                          │
-│              └─────┬─────┘           └─────┬─────┘                          │
-│                    │                       │                                │
-│              ┌─────┴─────┐           ┌─────┴─────┐                          │
-│              │  CRYPTO   │           │ OPERATOR  │                          │
-│              │ENFORCEMENT│           │ SUPREMACY │                          │
-│              └───────────┘           └───────────┘                          │
-│                                                                             │
-│  No competitor in the 2026 market combines all five.                        │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+### 5.2 Claims that are not differentiators (or not true)
 
-### 5.2. Positioning Statement
+| Claim (v1.0.0) | Reality |
+|---|---|
+| "Merkle ledger" | Linear SHA-256 hash chain. Resets per boot, not concurrency-safe, and cannot detect tail truncation. |
+| "Only runtime-enforced constitutional framework" | Runtime enforcement is standard (Microsoft AGT, AgentCore, NeMo, Docker MCP Gateway). Only the *pinned charter* is distinctive. |
+| "Post-quantum preparedness" | No ML-DSA and no algorithm-agility layer yet. |
+| "Hardware-tied security" | Windows DPAPI only, and it fails open on decryption error. No HSM or PKCS#11. |
+| "100/100 compliance" badge | Self-assessed by a linter that exempts the kernel and the tests. |
 
-> **For autonomous AI system operators** who need governance they can trust,
-> the **Autonomous Governance Laws** is a **constitutional runtime framework**
-> that **cryptographically enforces the 10 Laws for Intelligence Systems** —
-> unlike **monitoring-only platforms** like Arthur or **guardrail-only tools** like NeMo,
-> the 10 Laws provide **a complete philosophical, legal, and cryptographic foundation**
-> where governance is architecture, not an afterthought.
+### 5.3 OWASP Agentic Top 10 (2026) mapping: honest self-assessment
+
+| ASI | Risk | AGL today |
+|---|---|---|
+| ASI01 | Agent Goal Hijack | ❌ (no input provenance) |
+| ASI02 | Tool Misuse & Exploitation | ◐ 3-tier gate; evadable (P6) |
+| ASI03 | Identity & Privilege Abuse | ◐ operator key only; no agent identity |
+| ASI04 | Agentic Supply Chain | ◐ charter pinning; zero deps; no MCP-server pinning |
+| ASI05 | Unexpected Code Execution | ◐ prohibited-command list; no sandbox |
+| ASI06 | Memory & Context Poisoning | ❌ |
+| ASI07 | Insecure Inter-Agent Communication | ❌ (CAC tokens documented, not built) |
+| ASI08 | Cascading Failures | ◐ global `.halt` |
+| ASI09 | Human-Agent Trust Exploitation | ◐ payload-bound approvals; no action preview |
+| ASI10 | Rogue Agents | ◐ halt + ledger; ledger gaps |
+| | **Total** | **0 full · 7 partial · 3 none** |
 
 ---
 
 ## 6. SWOT ANALYSIS
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              SWOT ANALYSIS                                  │
-├────────────────────────────────────┬────────────────────────────────────────┤
-│         STRENGTHS                  │         WEAKNESSES                     │
-│                                    │                                        │
-│ S1. Only constitutional governance │ W1. Zero deployed runtime code         │
-│     framework in the market        │                                        │
-│ S2. 10 Laws = original, defensible │ W2. No SDK, no package, no CLI         │
-│     intellectual property          │                                        │
-│ S3. Radical gap transparency       │ W3. Single-person key dependency       │
-│     (unique trust signal)          │                                        │
-│ S4. Framework-agnostic design      │ W4. No community, no contributors     │
-│     (any runtime, any language)    │                                        │
-│ S5. Deep regulatory alignment      │ W5. Maturity language in docs          │
-│     (EU AI Act, NIST, OWASP)       │     overstates current readiness      │
-│ S6. Cryptographic enforcement      │ W6. Founder is sole contributor       │
-│     architecture (Ed25519, SHA256) │     and sole governance authority      │
-│ S7. Append-only audit trail design │ W7. No LICENSE file (adoption          │
-│     (satisfies Art. 12 EU AI Act)  │     blocker for enterprises)          │
-├────────────────────────────────────┼────────────────────────────────────────┤
-│         OPPORTUNITIES              │         THREATS                        │
-│                                    │                                        │
-│ O1. EU AI Act compliance gap       │ T1. Microsoft, NVIDIA expanding       │
-│     creates massive demand         │     rapidly into agent governance     │
-│ O2. 40% enterprise agent           │ T2. Time-to-market risk: competitors  │
-│     decommission risk (Gartner)    │     ship SDKs before 10 Laws does    │
-│     → governance = must-have       │                                        │
-│ O3. NIST AASI seeking open-source  │ T3. "Asimov's Laws" branding could   │
-│     protocol standards             │     be copied by larger players      │
-│ O4. $400M–$500M market growing     │ T4. Enterprise adoption requires     │
-│     28–45% CAGR                    │     SLA, support, legal entity       │
-│ O5. Chief AI Officer / Chief Trust │ T5. Post-quantum migration timeline  │
-│     Officer roles need frameworks  │     creates crypto obsolescence risk │
-│ O6. Academic/publishing potential   │ T6. AI governance market could       │
-│     for the 10 Laws as a standard  │     consolidate around 2-3 players  │
-│ O7. Partnership opportunities with │                                        │
-│     agent framework vendors        │                                        │
-│     (LangChain, CrewAI, AutoGen)   │                                        │
-└────────────────────────────────────┴────────────────────────────────────────┘
-```
+| **Strengths** | **Weaknesses** |
+|---|---|
+| • SHA-256-pinned constitutional charter verified at boot<br>• Payload-bound single-use Ed25519 approvals<br>• Zero dependencies; sub-ms overhead<br>• Apache-2.0, CI, 22 tests, CLI, linter, badge<br>• Candid gap-disclosure culture in GOVERNANCE/PRD | • **Default-config self-approval bypass (P1/P2)**<br>• Ledger: per-boot reset, no locking, no anchoring<br>• Substring classifier, default-allow for unknown tools<br>• 52% coverage; CLI untested<br>• Not on PyPI; bus factor 1<br>• History of documentation over-claims |
+| **Opportunities** | **Threats** |
+| • EU high-risk deadline moved to Dec 2027: time to mature<br>• OWASP ASI becoming a procurement checklist<br>• MCP 2026-07-28 stateless model suits per-request policy middleware<br>• Sovereign / air-gapped / regulated buyers who will not adopt hyperscaler control planes<br>• Singapore agentic framework closely matches AGL's concepts | • Free bundled controls from Microsoft, AWS, and Google<br>• Microsoft AGT (MIT, multi-language) occupies the same OSS niche<br>• Market consolidation reduces independent buyers<br>• Reputational risk if security claims outpace code |
 
 ---
 
 ## 7. STRATEGIC POSITIONING RECOMMENDATIONS
 
-### 7.1. Recommended Go-to-Market Strategy
+**Positioning statement (recommended):**
+> *"Autonomous Governance Laws is the minimal, auditable constitutional kernel for AI-agent tool calls: a pinned charter, approvals the agent cannot forge, and an evidence-grade action ledger, in a zero-dependency library you can read in an afternoon."*
 
-**Phase 1: Open-Source Standard (Q4 2026)**
-- Publish Python SDK on PyPI as `autonomous-governance-laws`
-- Choose an appropriate license (Apache 2.0 recommended for maximum enterprise adoption)
-- Submit the 10 Laws as an IETF/NIST informational document or position paper
-- Create a landing page / documentation site
-- Announce on GitHub, Hacker News, and relevant AI governance communities
+The statement is only usable once P0 below is complete.
 
-**Phase 2: Framework Integrations (Q1 2027)**
-- Build reference integrations for LangGraph, AutoGen, CrewAI, and PRISM Refraction
-- Partner with agent framework vendors for "Governed by 10 Laws" certification badging
-- Publish TypeScript and Rust SDKs
-- Engage with EU AI Act compliance consultancies as a recommended framework
-
-**Phase 3: Enterprise & Certification (Q2–Q3 2027)**
-- Establish a formal legal entity (LLC or foundation) to hold the 10 Laws IP
-- Create a certification program: "10 Laws Compliant" for agent runtimes
-- Offer enterprise support tiers and SLA-backed deployment assistance
-- Seek partnerships with cloud providers (GCP, AWS, Azure) for marketplace listings
-
-### 7.2. Priority Investment Areas
-
-| Area | Investment | Expected ROI | Timeline |
-|---|---|---|---|
-| Python SDK | 2–4 weeks engineering | Immediate credibility, PyPI downloads as adoption metric | Q4 2026 |
-| GitHub Community Setup | 1 week | Open-source traction, contributor pipeline | Q4 2026 |
-| EU AI Act Compliance Guide | 2 weeks | Direct sales enablement for enterprises facing Aug 2026 deadline | Immediate |
-| Landing Page & Documentation | 2 weeks | Market positioning, SEO, conference speaking bids | Q4 2026 |
-| Academic Paper (10 Laws) | 4–6 weeks | Thought leadership, citation network, speaking invitations | Q1 2027 |
-
-### 7.3. Partnership Targets
-
-| Partner Type | Target Organizations | Value Proposition |
+| Priority | Action | Why it moves market position |
 |---|---|---|
-| Agent Frameworks | LangChain, CrewAI, AutoGen, Semantic Kernel | "Governed by 10 Laws" integration layer |
-| Cloud Providers | Google Cloud, AWS, Azure | Marketplace listing, compliance template |
-| Consulting Firms | Deloitte, PwC, EY (AI Advisory) | Recommended governance framework for clients |
-| Academic | Stanford HAI, MIT CSAIL, Oxford AI Ethics | Research collaboration, peer review of 10 Laws |
-| Security Auditors | Trail of Bits, NCC Group, Bishop Fox | Third-party cryptographic audit credibility |
+| **P0 (now)** | Fix P1/P2 (fail closed without pinned key), P4/P5 (ledger continuity and locking), P6 (default-deny classifier); publish a security advisory | Removes the disqualifying defect; turns a liability into a credibility signal |
+| **P1** | Evidence-grade ledger (payload/approval binding, signed checkpoints); coverage ≥ 85%; SAST; OpenSSF Scorecard | Makes the "tamper-evident" claim defensible to auditors |
+| **P2** | PyPI 0.2.0 via Trusted Publishing with Sigstore attestations and SBOM | Removes the #1 adoption barrier |
+| **P3** | **OWASP ASI mapping doc**; **EU AI Act Art. 12/14 evidence exporter**; **MCP 2026-07-28 middleware**; adapters for LangGraph, OpenAI Agents SDK, and Microsoft Agent Framework / AGT; optional OPA/Cedar backend | Positions AGL as a complement to gateways and platforms rather than a competitor |
+| **P4** | Algorithm agility + hybrid Ed25519/ML-DSA; M-of-N operator quorum; PKCS#11/HSM; external ledger anchoring | Assurance tier for regulated and sovereign buyers |
+
+**Messaging rules going forward:**
+1. Never publish compliance percentages.
+2. Every capability claim links to code and a test.
+3. Always name the market-size source and scope.
+4. Use the term "hash-chained", not "Merkle", until a Merkle tree with signed tree heads ships.
 
 ---
 
-*Market Audit conducted by Antigravity AI — Strategic Market Intelligence Division.*
-*Data sourced from Grand View Research, Mordor Intelligence, Precedence Research, Gartner, Fortune Business Insights, and primary regulatory documents (EU AI Act, NIST AASI, OWASP). All figures as of August 2026.*
+## 8. SOURCES & VERIFICATION
+
+Verification used the project-local MCP fleet's `web-search` server (`fetch_webpage` / `bulk_url_fetch`) on 1 Nov 2026. 55 URLs were checked; **51 returned HTTP 200 with on-topic titles and claim terms present**. Three publishers blocked automation (ISO, Gartner, MarketsandMarkets; figures corroborated by secondary sources). One URL from the research brief returned 404 and was replaced with the correct MCP specification path. The full register with verification status is in [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md), Appendix A.
+
+**Regulatory & standards**
+- [R1] European Commission: Timeline for the Implementation of the EU AI Act. https://ai-act-service-desk.ec.europa.eu/en/ai-act/timeline/timeline-implementation-eu-ai-act
+- [R2] European Commission: "AI Omnibus enters into force," 27 Jul 2026. https://digital-strategy.ec.europa.eu/en/news/ai-omnibus-enters-force
+- [R3] artificialintelligenceact.eu: Implementation timeline. https://artificialintelligenceact.eu/implementation-timeline/
+- [R4] EU AI Act Art. 12, 14, 15, 73 (artificialintelligenceact.eu/article/N/); Regulation (EU) 2024/1689. https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689
+- [R5] NIST AI Risk Management Framework. https://www.nist.gov/itl/ai-risk-management-framework
+- [R6] NIST AI 600-1 Generative AI Profile. https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-generative-artificial-intelligence
+- [R7] NIST: Announcing the AI Agent Standards Initiative, 17 Feb 2026. https://www.nist.gov/news-events/news/2026/02/announcing-ai-agent-standards-initiative-interoperable-and-secure
+- [R8] OWASP Top 10 for Agentic Applications 2026. https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/
+- [R9] OWASP Agentic AI: Threats and Mitigations. https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/
+- [R10] ISO/IEC 42001:2023. https://www.iso.org/standard/42001
+- [R11] Hunton Andrews Kurth: Colorado AI Act amended and effective date delayed. https://www.hunton.com/privacy-and-cybersecurity-law-blog/colorado-ai-act-amended-and-effective-date-delayed
+- [R12] Office of Governor Newsom: SB 53 signed, 29 Sep 2025. https://www.gov.ca.gov/2025/09/29/governor-newsom-signs-sb-53-advancing-californias-world-leading-artificial-intelligence-industry/
+- [R13] IMDA: Model AI Governance Framework for Agentic AI. https://www.imda.gov.sg/resources/press-releases-factsheets-and-speeches/factsheets/2026/updated-model-ai-governance-framework-for-agentic-ai
+- [R14] Model Context Protocol specification 2026-07-28. https://modelcontextprotocol.io/specification/2026-07-28
+- [R15] Model Context Protocol specification 2025-11-25. https://modelcontextprotocol.io/specification/2025-11-25
+- [R16] NIST FIPS 204 (ML-DSA). https://csrc.nist.gov/pubs/fips/204/final
+- [R17] NIST FIPS 186-5. https://csrc.nist.gov/pubs/fips/186-5/final
+- [R18] RFC 8032, EdDSA. https://datatracker.ietf.org/doc/html/rfc8032
+
+**Market sizing**
+- [M1] Gartner: Global AI Regulations Fuel Billion-Dollar Market for AI Governance Platforms, 17 Feb 2026. https://www.gartner.com/en/newsroom/press-releases/2026-02-17-gartner-global-ai-regulations-fuel-billion-dollar-market-for-ai-governance-platforms
+- [M2] Grand View Research: AI Governance Market Report. https://www.grandviewresearch.com/industry-analysis/ai-governance-market-report
+- [M3] Precedence Research: AI Governance Market. https://www.precedenceresearch.com/ai-governance-market
+- [M4] MarketsandMarkets: AI Governance Market. https://www.marketsandmarkets.com/Market-Reports/ai-governance-market-176187291.html
+
+**Competitors & transactions**
+- [C1] NVIDIA NeMo Guardrails. https://github.com/NVIDIA/NeMo-Guardrails
+- [C2] Open Policy Agent. https://github.com/open-policy-agent/opa
+- [C3] Docker MCP Gateway. https://github.com/docker/mcp-gateway
+- [C4] Microsoft Agent Governance Toolkit. https://github.com/microsoft/agent-governance-toolkit
+- [C5] Cedar. https://github.com/cedar-policy/cedar
+- [C7] Microsoft Agent 365 GA, 1 May 2026. https://www.microsoft.com/en-us/security/blog/2026/05/01/microsoft-agent-365-now-generally-available-expands-capabilities-and-integrations/
+- [C8] AWS: Why Policy in Amazon Bedrock AgentCore chose Cedar. https://aws.amazon.com/blogs/security/why-policy-in-amazon-bedrock-agentcore-chose-cedar-for-securing-agentic-workflows/
+- [C9] Google Cloud Model Armor. https://cloud.google.com/security/products/model-armor
+- [C10] Zenity $125M Series C, 4 Aug 2026. https://fintech.global/2026/08/04/zenity-lands-125m-as-ai-agent-security-race-heats-up/
+- [C11] Guardrails AI joins Harvey. https://www.harvey.ai/blog/guardrails-ai-joins-harvey
+- [C12] Snyk acquires Invariant Labs. https://snyk.io/news/snyk-acquires-invariant-labs-to-accelerate-agentic-ai-security-innovation/
+- [C13] Check Point acquires Lakera. https://www.securitysolutionsmedia.com/2025/09/19/check-point-acquires-lakera-to-deliver-end-to-end-ai-security-for-enterprises/
+- [C14] Palo Alto Networks completes Protect AI acquisition. https://www.paloaltonetworks.com/company/press/2025/palo-alto-networks-completes-acquisition-of-protect-ai
+- [C15] F5 to acquire CalypsoAI. https://www.f5.com/company/news/press-releases/f5-to-acquire-calypsoai-to-bring-advanced-ai-guardrails-to-large-enterprises
+- [C16] Cisco to acquire Galileo. https://www.crn.com/news/networking/2026/cisco-to-snap-up-ai-observability-startup-galileo-technologies-to-expand-splunk-platform
+- [C17] Straiker $64M Series A. https://www.prnewswire.com/news-releases/straiker-raises-64m-series-a-to-secure-the-agentic-workforce-302812638.html
+
+---
+*Market Audit v2.0.0. Evidence-based revision prepared November 1, 2026 for Kirk LaSalle.*

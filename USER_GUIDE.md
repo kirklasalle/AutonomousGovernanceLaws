@@ -24,7 +24,7 @@ graph TD
 
     SO -->|2. Interactive Consent| APP["<b>🛡️ Single-Use Approval Tokens</b><br/>Elevated mutations (files, shell, network)<br/>require your signed authorization."]:::gate
 
-    SO -->|3. Absolute Killswitch| HALT["<b>🛑 Instant Emergency Halt</b><br/>Creating .halt terminates execution in < 50ms<br/>and immediately flushes the audit ledger."]:::gate
+    SO -->|3. Absolute Killswitch| HALT["<b>🛑 Emergency Halt</b><br/>Creating .halt refuses every subsequent<br/>intercepted call and logs HALT_TRIGGERED."]:::gate
 
     KEY --> RUN["<b>Autonomous Runtime Engine</b>"]:::action
     APP --> RUN
@@ -162,15 +162,18 @@ sequenceDiagram
     actor Operator as Human Operator
     participant Disk as File System Root
     participant Kernel as Governance Kernel
-    participant Swarm as Agent Worker Threads
+    participant Agent as Agent Runtime
     participant Ledger as .ledger/events.jsonl
 
     Operator->>Disk: Create .halt file (touch .halt)
-    Note over Kernel: Next interceptor cycle detects .halt
+    Note over Kernel: Next intercepted call detects .halt
     Kernel->>Ledger: Append HALT_TRIGGERED event (LAW2-HALT)
-    Kernel->>Swarm: Terminate worker threads immediately (< 50ms)
+    Kernel-->>Agent: Raise GovernanceViolation (call refused)
     Kernel-->>Operator: 🛑 Execution Frozen: System Fail-Closed
 ```
+
+> [!IMPORTANT]
+> The halt is checked **before each intercepted call**. It does not interrupt an executor that is already running, and it does not stop code paths that bypass the kernel. Pair it with OS-level process control for in-flight work.
 
 ### 4.1. Triggering via Command Line
 ```powershell
@@ -226,7 +229,10 @@ agy-governance status
 
 ## 6. GENERATING AUTOMATED COMPLIANCE CERTIFICATION BADGES
 
-Enterprise operators can prove compliance with the 10 Laws, EU AI Act Articles 9–15, and NIST AI RMF 1.0 using the automated badge generator:
+> [!NOTE]
+> The badge is a **self-assessment** generated from local checks (charter digests, `laws-lint`, ledger chain, halt status). It is not a third-party certification. It does not by itself demonstrate conformity with the EU AI Act or NIST AI RMF. See [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md) §7 for the evidence-based standards mapping.
+
+Enterprise operators can use the automated badge generator to report their compliance posture against the 10 Laws, EU AI Act Articles 9–15, and NIST AI RMF 1.0:
 
 ```bash
 # Generate high-resolution SVG compliance badge (default: assets/compliance_badge.svg)

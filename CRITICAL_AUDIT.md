@@ -8,6 +8,14 @@
 
 > *"The Quaternary Directive demands contrarian feedback and rejects sycophancy. This audit honors that mandate."*
 
+> [!IMPORTANT]
+> **Superseded (2026-11-01).** Several gaps flagged here have since been addressed:
+> - A Python SDK exists (v0.1.0, unpublished).
+> - Tests went from 0 to 22.
+> - Windows DPAPI key storage is in place.
+>
+> New code-level defects were found as well. For the current, probe-verified findings P1–P19 and roadmap, see [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md).
+
 ---
 
 ## TABLE OF CONTENTS
@@ -37,7 +45,7 @@ This is not an attack on the vision. The vision is extraordinary. This is the ho
 > [!NOTE]
 > ### 🛡️ OCTOBER 24, 2026 AUDIT ADDENDUM: SYSTEMIC REMEDIATION ATTESTATION
 > Following the directives of Supreme Operator **Kirk LaSalle**, the systemic gap between specification and implementation highlighted in this August 2026 audit has been **100% resolved**:
-> 1. **Executable Codebase Shipped:** Extracted and delivered `autonomous-governance-laws` Python SDK v0.1.0 with 3-tier risk interceptor and append-only Merkle ledger.
+> 1. **Executable Codebase Shipped:** Extracted and delivered `autonomous-governance-laws` Python SDK v0.1.0 with 3-tier risk interceptor and append-only SHA-256 hash-chained ledger.
 > 2. **Hardware Security & DPAPI:** Delivered Windows DPAPI (`crypt32.dll`) hardware key encryption and zero-dependency RFC 8032 Ed25519 asymmetric verification (`security.py`).
 > 3. **Single-Use Authorization Tokens:** Implemented action-bound `AGL-V1` tokens with payload cryptographic hash binding and replay prevention.
 > 4. **Automated Compliance Badges:** Delivered `agy-governance badge` generating certified 100/100 COMPLIANT SVG vector badges and Shields.io JSON endpoints (`badge.py`).

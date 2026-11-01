@@ -9,11 +9,11 @@
   <a href="https://github.com/kirklasalle/AutonomousGovernanceLaws"><img src="assets/compliance_badge.svg" alt="Autonomous Governance 100/100 COMPLIANT" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue?style=for-the-badge&logo=apache" alt="License" /></a>
   <a href="GOVERNANCE.md"><img src="https://img.shields.io/badge/Governance%20Status-Active%20%26%20Ratified%20(v3.2.1)-00E676?style=for-the-badge&logo=shield" alt="Governance Status" /></a>
-  <a href="pyproject.toml"><img src="https://img.shields.io/badge/Python%20SDK-v0.1.0%20Alpha-orange?style=for-the-badge&logo=python" alt="Python SDK" /></a>
+  <a href="pyproject.toml"><img src="https://img.shields.io/badge/Python%20SDK-v0.1.0%20Pre--Alpha-orange?style=for-the-badge&logo=python" alt="Python SDK" /></a>
   <a href="tests/"><img src="https://img.shields.io/badge/CI%20Invariants-22%2F22%20Passing-success?style=for-the-badge&logo=githubactions" alt="CI Invariants" /></a>
   <a href="src/autonomous_governance/linter.py"><img src="https://img.shields.io/badge/laws--lint-100%2F100%20Compliant-14b8a6?style=for-the-badge" alt="Constitutional Linter" /></a>
-  <a href="EXECUTIVE_SUMMARY.md"><img src="https://img.shields.io/badge/360%C2%B0%20Audit-Complete%20Suite-purple?style=for-the-badge" alt="360 Audit" /></a>
-  <a href="DEVELOPER_GUIDE.md"><img src="https://img.shields.io/badge/Ledger-SHA--256%20Merkle%20Chained-orange?style=for-the-badge" alt="Ledger" /></a>
+  <a href="WORLD_CLASS_AUDIT_2026-11.md"><img src="https://img.shields.io/badge/Engineering%20Audit%20(Nov%202026)-39%2F100%20Pre--Alpha-purple?style=for-the-badge" alt="Engineering Audit November 2026: 39/100" /></a>
+  <a href="DEVELOPER_GUIDE.md"><img src="https://img.shields.io/badge/Ledger-SHA--256%20Hash--Chained-orange?style=for-the-badge" alt="Ledger" /></a>
 </p>
 
 ---
@@ -31,15 +31,17 @@
 |---|:---:|---|---|
 | **Constitutional Framework** | 🟢 **Ratified & Binding** | 10 Laws for Intelligence Systems & Core Tenets | [`Permanent_Active_Directives.txt`](Permanent_Active_Directives.txt), [`AGENTIC_PRIME_DIRECTIVE.md`](AGENTIC_PRIME_DIRECTIVE.md) |
 | **Runtime Enforcement Covenant** | 🟢 **Ratified & Binding** | 3-Tier Risk Model, Attestation, Gap Registry | [`AGENTIC_SACRED_COVENANT.md`](AGENTIC_SACRED_COVENANT.md), [`GOVERNANCE.md`](GOVERNANCE.md) |
-| **Python SDK Kernel** | 🟢 **v0.1.0 Alpha (Architecturally Sound)** | Interceptor Kernel, Invariant Gating, Ledger Engine | [`src/autonomous_governance/`](src/autonomous_governance/), [`pyproject.toml`](pyproject.toml) |
+| **Python SDK Kernel** | 🟡 **v0.1.0 Pre-alpha** (security fixes P1–P6 pending) | Interceptor Kernel, Invariant Gating, Ledger Engine | [`src/autonomous_governance/`](src/autonomous_governance/), [`pyproject.toml`](pyproject.toml) |
 | **Charter Verification** | 🟢 **Verified** | SHA-256 Digest Pinning (`LAW10-CHARTER` v3.2.1) | [`config/charter_manifest.json`](config/charter_manifest.json), [`scripts/verify_charter.py`](scripts/verify_charter.py) |
-| **Automated Invariant Tests** | 🟢 **22/22 Passing in CI** | LAW1, LAW2, LAW3, LAW9, LAW10, Ed25519, DPAPI, Linter | [`tests/`](tests/), [`.github/workflows/governance_ci.yml`](.github/workflows/governance_ci.yml) |
-| **Hardware & Token Security** | 🟢 **Operational** | Windows DPAPI, RFC 8032 Ed25519, Replay-Protected Tokens | [`src/autonomous_governance/security.py`](src/autonomous_governance/security.py) |
-| **Compliance Certification** | 🟢 **100/100 Certified** | Dynamic SVG Badge & Shields.io Endpoint Generator | [`assets/compliance_badge.svg`](assets/compliance_badge.svg), [`src/autonomous_governance/badge.py`](src/autonomous_governance/badge.py) |
-| **Constitutional Linter** | 🟢 **100/100 Score** | Static audit of prompts, tool calls, and scripts | [`src/autonomous_governance/linter.py`](src/autonomous_governance/linter.py) (`laws-lint`) |
-| **Critical Internal Audit** | 🟣 **Complete** | Candor-first gap assessment & invariant verification | [`CRITICAL_AUDIT.md`](CRITICAL_AUDIT.md) |
-| **Market Landscape Audit** | 🟣 **Complete** | 2026 Market ($500M, 45% CAGR), EU AI Act & NIST | [`MARKET_AUDIT.md`](MARKET_AUDIT.md) |
-| **Executive Scorecard** | 🟣 **Complete** | Consolidated project health, Risk Register, Roadmap | [`EXECUTIVE_SUMMARY.md`](EXECUTIVE_SUMMARY.md) |
+| **Automated Invariant Tests** | 🟢 **22/22 Passing in CI** (52% line coverage) | LAW1, LAW2, LAW3, LAW9, LAW10, Ed25519, DPAPI, Linter | [`tests/`](tests/), [`.github/workflows/governance_ci.yml`](.github/workflows/governance_ci.yml) |
+| **Hardware & Token Security** | 🟠 **Implemented; default config unsafe** | RFC 8032 Ed25519 tokens, Windows DPAPI. Without a pinned operator key, an agent can self-approve (P1/P2). | [`src/autonomous_governance/security.py`](src/autonomous_governance/security.py) |
+| **Compliance Badge** | 🟡 **Self-assessed** | SVG badge & Shields.io endpoint from `laws-lint`. Not a third-party certification. | [`assets/compliance_badge.svg`](assets/compliance_badge.svg), [`src/autonomous_governance/badge.py`](src/autonomous_governance/badge.py) |
+| **Constitutional Linter** | 🟡 **100/100 self-score** (blind spots P13/P14) | Static audit of prompts, tool calls, and scripts | [`src/autonomous_governance/linter.py`](src/autonomous_governance/linter.py) (`laws-lint`) |
+| **World-Class Engineering Audit** | 🟣 **Nov 2026: 39/100** (≈70 after P0/P1) | Evidence-based audit, findings P1–P19, market position | [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md) |
+| **Installation Methods Report** | 🟣 **Complete** | Charter-copy vs. agent-plugin install, tested plugin prototype | [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md), [`scripts/install_charter.ps1`](scripts/install_charter.ps1) |
+| **Critical Internal Audit** | ⚪ **Superseded** | August 2026 gap assessment (historical) | [`CRITICAL_AUDIT.md`](CRITICAL_AUDIT.md) |
+| **Market Landscape Audit** | 🟣 **v2.0.0 (Nov 2026)** | ≈ $0.4–0.5B market in 2026 (cited), EU AI Act Omnibus dates, competitor matrix | [`MARKET_AUDIT.md`](MARKET_AUDIT.md) |
+| **Executive Scorecard** | 🟣 **v3.0.0** | Consolidated project health, Risk Register, Roadmap | [`EXECUTIVE_SUMMARY.md`](EXECUTIVE_SUMMARY.md) |
 | **Interactive HTML Presentation**| 🟣 **Ready** | 17-slide dark glassmorphism stakeholder deck | [`presentation.html`](presentation.html) |
 
 ---
@@ -73,7 +75,7 @@ graph TD
     APD --> Runtime_Enforcement
     ASC --> Runtime_Enforcement
 
-    LEDGER[(".ledger/events.jsonl<br/><b>SHA-256 Merkle Chained Ledger</b><br/>• LAW9-LEDGER • LAW9-APPEND • LAW9-CHAIN")]:::ledger
+    LEDGER[(".ledger/events.jsonl<br/><b>SHA-256 Hash-Chained Ledger</b><br/>• LAW9-LEDGER • LAW9-APPEND • LAW9-CHAIN")]:::ledger
 
     Runtime_Enforcement -->|Every Validated Action| LEDGER
 ```
@@ -125,7 +127,7 @@ Authored by **Kirk LaSalle**, these 10 Laws extend classical Asimovian principle
 
 ## 🛡️ RUNTIME INTERCEPTION & 3-TIER RISK PIPELINE
 
-Every tool invocation, API call, file mutation, and sub-agent spawn passes through the **Governance Interceptor Pipeline** before reaching the host OS or execution environment.
+Every tool invocation, API call, file mutation, and sub-agent spawn that your agent routes through `GovernanceKernel.intercept_and_execute` passes through the **Governance Interceptor Pipeline** before reaching the host OS or execution environment. Calls that bypass the kernel are not governed. To govern a coding assistant's own tool calls, see the agent-plugin route in [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md).
 
 ```mermaid
 sequenceDiagram
@@ -185,6 +187,15 @@ cd AutonomousGovernanceLaws
 # Install in editable mode with development and cryptographic dependencies
 pip install -e ".[dev,crypto]"
 ```
+
+> [!IMPORTANT]
+> **The package does not contain the charter.** `GovernanceKernel` refuses to boot unless the three charter documents **and** `config/charter_manifest.json` are present, byte-identical, in the working directory it is started from. To use AGL in your own project, copy them as *files* and verify them:
+>
+> ```powershell
+> powershell -ExecutionPolicy Bypass -File scripts\install_charter.ps1 -Target D:\Projects\MyAgent
+> ```
+>
+> Never retype the documents, paste them from rendered Markdown, or re-save them in an editor: an added BOM, a trailing newline, or a changed dash breaks the pinned digests. To give an AI assistant the charter as instructions (`AGENTS.md`, `CLAUDE.md`, Antigravity rules), or to learn about the agent-plugin route, see [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md). AGL is not yet published to PyPI and is not yet an installable agent plugin.
 
 ### 2. Verify Charter Integrity (CLI)
 
@@ -255,6 +266,9 @@ agy-governance approve \
 
 ### 7. Embedding the Interceptor in Your Agent Runtime
 
+> [!WARNING]
+> Always pin an operator public key (`operator_pubkey_path`). In v0.1.0, a kernel without a pinned key accepts legacy and self-signed approval tokens, so an agent can approve its own ELEVATED actions (audit findings P1/P2; fix scheduled for P0).
+
 ```python
 from autonomous_governance import (
     GovernanceKernel,
@@ -315,16 +329,18 @@ gantt
     360-Degree Architecture Audit & PRD          :done, p4, 2026-08-28, 2026-08-30
     Python SDK & laws-lint Linter Engine         :done, p5, 2026-09-01, 2026-09-28
     Charter Re-Pinning & v3.2.1 Ratification     :done, p6, 2026-10-24, 2026-10-24
-    Live Invariant Test Expansion (14/14 tests)  :done, p7, 2026-10-24, 2026-10-24
+    Live Invariant Test Expansion (22/22 tests)  :done, p7, 2026-10-24, 2026-10-24
 
-    section Phase 3: Cryptography & Packaging
-    PyPI Package v0.1.0 Publication              :active, p8, 2026-10-25, 2026-11-15
-    Asymmetric Ed25519 & DPAPI/PKCS#11 Key Store :p9, 2026-11-01, 2026-12-15
-    Automated Compliance Badge Generator (CLI)   :p10, 2026-11-15, 2026-12-30
+    section Phase 3: Cryptography, Hardening & Packaging
+    Ed25519 Tokens, DPAPI Keystore, Badge CLI    :done, p9, 2026-10-24, 2026-10-24
+    Evidence-Based Re-Audit (39/100)             :done, p10, 2026-11-01, 2026-11-01
+    P0 Security Fixes (P1-P6, P15, P18, P19)     :active, p8, 2026-11-02, 2026-11-16
+    Charter Package Data, init CLI, Agent Plugin :p8b, 2026-11-16, 2026-12-14
+    PyPI 0.2.0 & Plugin Listing                  :p8c, 2027-01-04, 2027-01-31
 
     section Phase 4: Swarms & Post-Quantum
-    CAC Cross-System Swarm Tokens (Law 4)        :p11, 2027-01-01, 2027-03-31
-    Post-Quantum ML-DSA / Dilithium Readiness    :p12, 2027-04-01, 2027-08-31
+    CAC Cross-System Swarm Tokens (Law 4)        :p11, 2027-02-01, 2027-05-31
+    PKCS#11/HSM, M-of-N, ML-DSA Hybrid           :p12, 2027-06-01, 2027-12-01
 ```
 
 ---
@@ -337,8 +353,10 @@ gantt
 | [`AGENTIC_PRIME_DIRECTIVE.md`](AGENTIC_PRIME_DIRECTIVE.md) | Operational constitution (v3.1.0) defining core directives & commitments | Engineers & Operators |
 | [`AGENTIC_SACRED_COVENANT.md`](AGENTIC_SACRED_COVENANT.md) | Human-AI covenant (v2.0) defining runtime enforcement & attestation | Systems Architects |
 | [`GOVERNANCE.md`](GOVERNANCE.md) | Runtime enforcement status matrix, Council quorum & amendment rules | Auditors & Regulators |
-| [`CRITICAL_AUDIT.md`](CRITICAL_AUDIT.md) | Brutally honest gap analysis, structural risk & maturity assessment | Internal & Due Diligence |
-| [`MARKET_AUDIT.md`](MARKET_AUDIT.md) | 2026 AI governance market ($500M), EU AI Act & NIST alignment | Investors & Strategists |
+| [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md) | Evidence-based engineering audit (39/100), findings P1–P19, market position, roadmap | Leadership, Security & Due Diligence |
+| [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md) | Charter-copy vs. agent-plugin installation analysis, per-host loaders, tested procedure | Operators & Integrators |
+| [`CRITICAL_AUDIT.md`](CRITICAL_AUDIT.md) | August 2026 gap analysis (historical; superseded by the November 2026 audit) | Internal & Due Diligence |
+| [`MARKET_AUDIT.md`](MARKET_AUDIT.md) | AI governance market (≈ $0.4–0.5B in 2026, cited), EU AI Act, NIST & competitor matrix | Investors & Strategists |
 | [`EXECUTIVE_SUMMARY.md`](EXECUTIVE_SUMMARY.md) | Board-ready scorecard, project health dashboard & risk register | Leadership & Board |
 | [`presentation.html`](presentation.html) | Interactive 17-slide stakeholder presentation deck | Presenters & Stakeholders |
 | [`AUDIT_REPORT.md`](AUDIT_REPORT.md) | Due diligence audit, 7-vector stress tests & threat models | Security & Compliance |
@@ -356,7 +374,7 @@ Amendments to these directives are high-security operations. Any modification to
 1. Formal submission of an RFC document to the **Intelligence Governance Council** (see [`GOVERNANCE.md`](GOVERNANCE.md)).
 2. Unanimous advisory approval from Council members.
 3. Ratification by the Supreme Operator (**Kirk LaSalle**).
-4. Cryptographic re-signing and digest re-pinning of [`config/charter_manifest.json`](config/charter_manifest.json).
+4. Digest re-pinning of [`config/charter_manifest.json`](config/charter_manifest.json) (a signed manifest is planned but not yet implemented).
 5. CI/CD attestation verification passing all test suites (`LAW10-CHARTER`, `LAW10-APPROVAL`).
 
 ---

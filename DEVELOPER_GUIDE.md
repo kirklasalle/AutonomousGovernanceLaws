@@ -38,7 +38,7 @@ graph TD
         RCHECK -->|Tier 1: SAFE| EXEC_T1["Direct Safe Execution"]:::exec
     end
 
-    EXEC_T1 --> LEDGER[(".ledger/events.jsonl<br/><b>Append-Only SHA-256 Merkle Ledger</b>")]:::exec
+    EXEC_T1 --> LEDGER[(".ledger/events.jsonl<br/><b>Append-Only SHA-256 Hash-Chained Ledger</b>")]:::exec
     EXEC_T2 --> LEDGER
     HALT_DROP --> LEDGER
     LAW1_DROP --> LEDGER
@@ -85,6 +85,9 @@ To ensure that governance laws cannot be tampered with or modified in CI/CD or p
 ---
 
 ## 3. MULTI-AGENT SWARM DELEGATION & CAC TOKENS (`LAW4-DELEGATE`)
+
+> [!NOTE]
+> **Design specification: not implemented in v0.1.0.** The SDK does not yet issue or verify CAC tokens. The kernel classifies `spawn_agent` as ELEVATED, so it requires operator approval. CAC delegation is on the roadmap (Phase 4).
 
 When a parent agent delegates sub-tasks to child agents or external swarms, it must pass a **Character Accountability Control (CAC)** token to propagate constitutional boundaries.
 
@@ -379,4 +382,4 @@ is_valid, reason = verify_approval_token(
 ```
 
 ---
-*Autonomous Governance Laws Developer Specification — Certified for Production.*
+*Autonomous Governance Laws Developer Specification: v0.1.0 pre-alpha. See [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md) before production use.*

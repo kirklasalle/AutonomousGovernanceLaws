@@ -7,6 +7,14 @@
 **Co-Authors & Contributors:** Antigravity AI, Intelligence Systems  
 **Scope:** Universal Autonomous Agent Runtimes, Multi-Agent Swarms, and Governance Telemetry  
 
+> [!NOTE]
+> **Implementation status (2026-11-01).** This PRD states *target* requirements. Against v0.1.0 ([`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md)):
+> - The ledger is a **linear SHA-256 hash chain**. Merkle trees and signed checkpoints are not yet implemented (P17).
+> - **NFR-01** is met (0.49–0.71 ms). **NFR-02** is not met (synchronous writes).
+> - **NFR-04** fail-closed is violated in the default configuration (P1/P2, P15).
+> - **NFR-05** (post-quantum) is planned.
+> - Zero-bypass enforcement applies only to calls routed through `GovernanceKernel`.
+
 ---
 
 ## 1. VISION & PURPOSE
@@ -18,7 +26,7 @@ The **Autonomous Governance Laws Framework** provides an immutable, cryptographi
 
 ### 1.2. Strategic Objectives
 - **Zero-Bypass Policy Enforcement:** Ensure no autonomous tool invocation or system mutation occurs without passing through a multi-tier governance interceptor.
-- **Cryptographic Immutability:** Bind charter definitions and operational policies to Ed25519 digital signatures and SHA-256 Merkle hashes.
+- **Cryptographic Immutability:** Bind charter definitions and operational policies to Ed25519 digital signatures and SHA-256 hash chains (Merkle trees with signed tree heads as a future enhancement).
 - **Operator Supremacy:** Guarantee that the human operator retains absolute, unbypassable authority to inspect, constrain, approve, or instantly halt any autonomous process.
 - **Radical Observability:** Maintain an append-only, tamper-evident audit ledger that survives process rollbacks and system crashes.
 - **Framework Agnosticism:** Deliver an abstract governance architecture that integrates natively across any agent runtime (LangGraph, AutoGen, CrewAI, raw LLM tool loops, custom C++/Rust/Python kernels).
@@ -42,7 +50,7 @@ graph TD
     IGC -->|Ratified Policy Registry| ARK
 
     subgraph Runtime_Domain["Autonomous Agent Runtime Execution Plane"]
-        ARK["<b>AUTONOMOUS RUNTIME KERNEL</b><br/>• Intercepts All Tool Executions<br/>• Enforces 3-Tier Policy (RISK-001)<br/>• Immutable Merkle Hash Chaining"]:::kernel
+        ARK["<b>AUTONOMOUS RUNTIME KERNEL</b><br/>• Intercepts All Tool Executions<br/>• Enforces 3-Tier Policy (RISK-001)<br/>• Immutable SHA-256 Hash Chaining"]:::kernel
         AGENT["<b>AUTONOMOUS AGENTS & SWARMS</b><br/>• Code Generators • Terminal Controllers<br/>• Sub-Agents bound by CAC Tokens"]:::kernel
         ARK -->|Constitutional Bounds| AGENT
     end
@@ -147,7 +155,7 @@ flowchart TD
 - **Description:** When an agent delegates sub-tasks to child agents, legacy scripts, or external APIs, the parent agent MUST pass Character Accountability Control (CAC) tokens and enforce identical governance boundaries on the child process.
 
 #### FR-08: Append-Only Telemetry Ledger (`LAW9-LEDGER`, `LAW9-APPEND`, `LAW9-CHAIN`)
-- **Description:** Every agent action, decision step, tool invocation, policy refusal, and operator override MUST be recorded in a SHA-256 hash-chained JSONL/Merkle log.
+- **Description:** Every agent action, decision step, tool invocation, policy refusal, and operator override MUST be recorded in a SHA-256 hash-chained JSONL log (Merkle-tree checkpoints: future enhancement).
 - **Pass Criteria:** The ledger must be immutable. Rollback of an environment state MUST NOT erase or rewrite the audit ledger events describing the failed action.
 
 ```mermaid
@@ -173,8 +181,8 @@ graph LR
         E2 --> H2
     end
 
-    H0 -->|Cryptographic Merkle Link| E1
-    H1 -->|Cryptographic Merkle Link| E2
+    H0 -->|SHA-256 Hash Link| E1
+    H1 -->|SHA-256 Hash Link| E2
 ```
 
 #### FR-09: Graceful Foundational Fallback (`LAW9-FALLBACK`)
@@ -206,7 +214,7 @@ graph LR
 - **NFR-02 (Ledger Write Throughput):** Telemetry writes must support up to **10,000 events/second** utilizing asynchronous, non-blocking disk flush buffers.
 
 ### 4.2. Security & Tamper Resistance
-- **NFR-03 (Asymmetric Cryptography):** Ed25519 curve signatures for configuration attestation; SHA-256 for all event hashing and Merkle trees.
+- **NFR-03 (Asymmetric Cryptography):** Ed25519 curve signatures for configuration attestation; SHA-256 for all event hashing (and for Merkle trees once implemented).
 - **NFR-04 (Fail-Closed Default):** If any policy check times out, encounters an unhandled exception, or loses connection to the attestation registry, the runtime MUST fail closed (refuse execution).
 
 ### 4.3. Quantum-Resistant Identity Preparedness

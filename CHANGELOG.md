@@ -4,6 +4,45 @@ All notable changes to the Autonomous Governance Laws framework, constitutional 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-11-01
+
+Documentation and tooling only. No changes to runtime code, tests, charter documents, or `config/charter_manifest.json` (digests v3.2.1 still verify).
+
+### Added
+- **[`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md)**: evidence-based engineering audit.
+  - Reproducible rubric; composite score **39/100** (≈70 projected after P0/P1).
+  - 19 probe-backed findings (P1–P19).
+  - November 2026 market position with a citation register, standards mapping, and remediation roadmap.
+- **[`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md)**: analysis of two installation routes, copying the three charter documents vs. installing as a plugin.
+  - Per-host instruction loaders (Copilot `AGENTS.md`, Claude `CLAUDE.md`, Antigravity rules).
+  - Twelve-scenario byte-exactness probe.
+  - Tested agent-plugin prototype for Copilot CLI (`sessionStart` charter injection, `preToolUse` enforcement).
+- **[`scripts/install_charter.ps1`](scripts/install_charter.ps1)**: copies the three charter documents and the manifest into a target project byte-for-byte, then verifies them with the kernel's own LF-normalised SHA-256 rule (`-Force`, `-VerifyOnly`).
+
+### Changed
+- **[`EXECUTIVE_SUMMARY.md`](EXECUTIVE_SUMMARY.md) v3.0.0**: the 93.4 score is withdrawn.
+  - Status set to pre-alpha.
+  - New risk register R1–R10, with the self-approval defect rated CRITICAL.
+  - Roadmap re-baselined; directive added not to upload the 0.1.0 `dist/` artifacts.
+- **[`MARKET_AUDIT.md`](MARKET_AUDIT.md) v2.0.0**: market sizing re-sourced (≈ $0.4–0.5B in 2026, cited).
+  - EU AI Act Digital Omnibus dates updated.
+  - Competitor matrix updated (Microsoft Agent Governance Toolkit, hyperscaler controls, OWASP ASI Top 10).
+- **[`README.md`](README.md)**: status table and badges corrected.
+  - Pre-alpha status; "Merkle" changed to "hash-chained"; self-assessed linter and badge labelled as such.
+  - Added a charter-installation requirement, a pinned-key warning, the corrected roadmap, and links to the new reports.
+- Over-claims corrected in [`GOVERNANCE.md`](GOVERNANCE.md), [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md), [`USER_GUIDE.md`](USER_GUIDE.md), and [`PRD.md`](PRD.md).
+- Supersession notices added to [`AUDIT_REPORT.md`](AUDIT_REPORT.md) and [`CRITICAL_AUDIT.md`](CRITICAL_AUDIT.md).
+
+### Security
+- Known open defects (not yet fixed; see the audit §4):
+  - **Self-approval without a pinned operator key** (P1/P2).
+  - **Ledger chain reset across processes and concurrency** (P4/P5).
+  - **Classifier evasion** (P6).
+  - **DPAPI key-load fail-open** (P15).
+- Until fixed, always pass `operator_pubkey_path` and do not publish the 0.1.0 artifacts.
+
+---
+
 ## [3.2.2] - 2026-10-24
 
 ### Added

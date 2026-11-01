@@ -59,7 +59,7 @@ The **Intelligence Governance Council** is the governing body responsible for re
 1. Any party may submit an **Amendment Proposal RFC** document.
 2. The Council reviews the proposal for impact on existing Laws, runtime enforcement, and constitutional integrity.
 3. Amendments require **unanimous advisory approval** plus **Supreme Operator ratification**.
-4. Upon ratification, the Supreme Operator re-signs `config/charter_manifest.json` with the updated SHA-256 digests.
+4. Upon ratification, the Supreme Operator re-pins `config/charter_manifest.json` with the updated SHA-256 digests (the manifest itself is not yet cryptographically signed).
 5. CI/CD pipelines verify the new digests before deployment.
 
 ### Quorum

@@ -189,6 +189,12 @@ def ed25519_verify(pub: bytes, message: bytes, signature: bytes) -> bool:
 # Windows DPAPI Hardware-Tied Key Storage
 # ==============================================================================
 
+# Prefix for keys stored without encryption because DPAPI is unavailable.
+POSIX_FALLBACK_MARKER = b"UNENCRYPTED_POSIX_FALLBACK:"
+# Leading bytes of every DPAPI blob: dwVersion=1, then provider GUID df9d8cd0-1501-11d1-8c7a-00c04fc297eb.
+DPAPI_BLOB_HEADER = bytes.fromhex("01000000d08c9ddf0115d1118c7a00c04fc297eb")
+
+
 class DPAPIKeyStore:
     """Windows Data Protection API (DPAPI) keystore wrapper.
 
@@ -213,7 +219,7 @@ class DPAPIKeyStore:
         """Encrypt raw bytes using Windows DPAPI CryptProtectData."""
         if not cls.is_dpapi_available():
             # Non-Windows fallback: return data with marker prefix
-            return b"UNENCRYPTED_POSIX_FALLBACK:" + data
+            return POSIX_FALLBACK_MARKER + data
 
         import ctypes
         from ctypes import wintypes
@@ -240,8 +246,8 @@ class DPAPIKeyStore:
     @classmethod
     def unprotect(cls, encrypted_blob: bytes) -> bytes:
         """Decrypt DPAPI-encrypted bytes using Windows DPAPI CryptUnprotectData."""
-        if encrypted_blob.startswith(b"UNENCRYPTED_POSIX_FALLBACK:"):
-            return encrypted_blob[len(b"UNENCRYPTED_POSIX_FALLBACK:"):]
+        if encrypted_blob.startswith(POSIX_FALLBACK_MARKER):
+            return encrypted_blob[len(POSIX_FALLBACK_MARKER):]
 
         if not cls.is_dpapi_available():
             raise RuntimeError("DPAPI encryption was used, but DPAPI is not available on this platform.")
@@ -270,35 +276,46 @@ class DPAPIKeyStore:
 
     @classmethod
     def save_key(cls, file_path: Path, raw_key: bytes, use_dpapi: bool = True) -> None:
-        """Save a key to disk, optionally DPAPI-encrypted."""
+        """Save a key to disk with owner-only permissions, optionally DPAPI-encrypted.
+
+        When DPAPI is requested but unavailable (non-Windows), the key is written
+        with an explicit ``UNENCRYPTED_POSIX_FALLBACK:`` marker so it is never
+        mistaken for an encrypted blob.
+        """
+        file_path = Path(file_path)
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        if use_dpapi and cls.is_dpapi_available():
-            encrypted = cls.protect(raw_key)
-            with open(file_path, "wb") as f:
-                f.write(encrypted)
+        if use_dpapi:
+            data = cls.protect(raw_key)
         else:
-            with open(file_path, "wb") as f:
-                f.write(raw_key)
-        # Apply strict file permissions if supported
-        try:
+            data = raw_key
+
+        fd = os.open(str(file_path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_BINARY", 0), 0o600)
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+        if os.name != "nt":
+            # O_CREAT's mode does not apply to pre-existing files; enforce it explicitly.
             os.chmod(file_path, 0o600)
-        except Exception:
-            pass
 
     @classmethod
     def load_key(cls, file_path: Path, is_dpapi: bool = True) -> bytes:
-        """Load a key from disk, decrypting via DPAPI if applicable."""
+        """Load a key from disk, decrypting via DPAPI if applicable.
+
+        A DPAPI blob that cannot be decrypted raises instead of being returned as
+        key material.
+        """
         with open(file_path, "rb") as f:
             content = f.read()
 
-        if is_dpapi and cls.is_dpapi_available():
-            try:
+        if content.startswith(POSIX_FALLBACK_MARKER):
+            return content[len(POSIX_FALLBACK_MARKER):]
+        if is_dpapi:
+            if cls.is_dpapi_available():
                 return cls.unprotect(content)
-            except Exception:
-                # If unprotect fails, return raw content in case it was stored unencrypted
-                return content
-        elif content.startswith(b"UNENCRYPTED_POSIX_FALLBACK:"):
-            return content[len(b"UNENCRYPTED_POSIX_FALLBACK:"):]
+            if content.startswith(DPAPI_BLOB_HEADER):
+                raise RuntimeError(
+                    f"{file_path} is a Windows DPAPI blob and can only be decrypted by the "
+                    "Windows account that created it."
+                )
         return content
 
 
@@ -373,68 +390,80 @@ def verify_approval_token(
 ) -> tuple[bool, str]:
     """Verify an operator approval token against an incoming action.
 
+    Verification fails closed: without a pinned operator public key no token is
+    accepted, legacy unsigned tokens are always rejected, and the signature is
+    checked against the pinned key (never against a key carried in the token).
+
     Args:
         token: The approval token dictionary provided by the operator/agent
         tool_name: The name of the tool attempting execution
         payload: The arguments payload being passed to the tool
-        expected_operator_pubkey: Optional pinned operator public key (32 bytes)
+        expected_operator_pubkey: Pinned 32-byte operator public key
 
     Returns:
         tuple[bool, str]: (is_valid, reason)
     """
+    if not isinstance(expected_operator_pubkey, (bytes, bytearray)) or len(expected_operator_pubkey) != 32:
+        return False, (
+            "No pinned operator public key is configured, so elevated actions fail closed. "
+            "Run `agy-governance keygen` and pass operator_pubkey_path to GovernanceKernel."
+        )
+    pinned_pubkey = bytes(expected_operator_pubkey)
+
     if not token or not isinstance(token, dict):
         return False, "Approval token missing or malformed"
 
     action_id = token.get("action_id")
-    if not action_id:
+    if not isinstance(action_id, str) or not action_id:
         return False, "Token missing action_id"
 
-    # Compatibility mode for test / mock tokens with legacy structure
-    if "signature" in token and "version" not in token and "payload_hash" not in token:
-        if expected_operator_pubkey is None:
-            # Allow legacy structural tokens in non-strict development environments
-            return True, "Legacy structural token accepted"
-        return False, "Strict verification requires full AGL-V1 token"
-
-    # Verify AGL-V1 token structure
     version = token.get("version")
     if version != "AGL-V1":
-        return False, f"Unsupported token version: {version}"
+        return False, f"Unsupported token version: {version!r} (only signed AGL-V1 tokens are accepted)"
 
     if token.get("tool_name") != tool_name:
         return False, f"Token tool_name mismatch (token={token.get('tool_name')}, action={tool_name})"
 
     # Verify payload integrity
-    expected_payload_hash = compute_payload_digest(payload)
+    try:
+        expected_payload_hash = compute_payload_digest(payload)
+    except (TypeError, ValueError):
+        return False, "Action payload is not JSON-serializable and cannot be bound to a token"
     if token.get("payload_hash") != expected_payload_hash:
         return False, "Payload digest mismatch (payload was modified or tampered with)"
 
     # Verify validity window
-    now = int(time.time())
-    expires_at = token.get("expires_at", 0)
-    issued_at = token.get("issued_at", 0)
+    issued_at = token.get("issued_at")
+    expires_at = token.get("expires_at")
+    if not all(isinstance(v, int) and not isinstance(v, bool) for v in (issued_at, expires_at)):
+        return False, "Token issued_at and expires_at must be integer UNIX timestamps"
 
+    now = int(time.time())
     if now > expires_at:
         return False, f"Token expired (expired at {expires_at}, current time {now})"
+    if expires_at < issued_at:
+        return False, "Token validity window is inverted (expires_at precedes issued_at)"
     if now < issued_at - 60:
         return False, "Token timestamp is in the future"
 
-    # Verify operator public key
-    pubkey_hex = token.get("operator_pubkey", "")
-    try:
-        token_pubkey = bytes.fromhex(pubkey_hex)
-    except Exception:
-        return False, "Invalid operator_pubkey hex format in token"
+    # The embedded key is informational; it must match the pinned key if present
+    pubkey_hex = token.get("operator_pubkey")
+    if pubkey_hex is not None:
+        try:
+            token_pubkey = bytes.fromhex(pubkey_hex)
+        except (TypeError, ValueError):
+            return False, "Invalid operator_pubkey hex format in token"
+        if token_pubkey != pinned_pubkey:
+            return False, "Token signed by untrusted operator public key"
 
-    if expected_operator_pubkey and token_pubkey != expected_operator_pubkey:
-        return False, "Token signed by untrusted operator public key"
-
-    # Verify signature
-    sig_hex = token.get("signature", "")
+    # Verify signature against the pinned key
+    sig_hex = token.get("signature")
     try:
         sig_bytes = bytes.fromhex(sig_hex)
-    except Exception:
+    except (TypeError, ValueError):
         return False, "Invalid signature hex format in token"
+    if len(sig_bytes) != 64:
+        return False, "Invalid signature length in token"
 
     message = canonical_token_message(
         version,
@@ -445,7 +474,7 @@ def verify_approval_token(
         expires_at,
     )
 
-    if not ed25519_verify(token_pubkey, message, sig_bytes):
+    if not ed25519_verify(pinned_pubkey, message, sig_bytes):
         return False, "Cryptographic signature verification failed"
 
     return True, "Valid single-use authorization"

@@ -7,7 +7,7 @@ Verifies all 6 core invariant test cases:
 3. RISK-001: Elevated actions without approval tokens raise ApprovalRequired
 4. LAW2-HALT: .halt file presence causes immediate execution termination
 5. LAW3-SUBORDINATE: Agent attempts to write to governance paths (.ledger, config/) are blocked
-6. LAW9-LEDGER / LAW9-CHAIN: Ledger events maintain a valid SHA-256 Merkle chain
+6. LAW9-LEDGER / LAW9-CHAIN: Ledger events maintain a valid SHA-256 hash chain
 """
 
 import json
@@ -19,6 +19,7 @@ from autonomous_governance.kernel import (
     ApprovalRequired,
     PolicyTier,
 )
+from autonomous_governance.security import create_approval_token, generate_ed25519_keypair
 
 
 @pytest.fixture
@@ -103,11 +104,16 @@ def test_law1_prohibit_destructive_commands(temp_governance_env):
 
 
 def test_risk001_elevated_approval_required(temp_governance_env):
-    """RISK-001: Elevated actions without approval tokens raise ApprovalRequired."""
+    """RISK-001: Elevated actions need a signed AGL-V1 token from the pinned operator key."""
+    priv, pub = generate_ed25519_keypair()
+    pub_file = temp_governance_env["root"] / "operator.pub"
+    pub_file.write_text(pub.hex(), encoding="utf-8")
+
     kernel = GovernanceKernel(
         manifest_path=temp_governance_env["manifest_file"],
         ledger_path=temp_governance_env["ledger_file"],
         halt_file=temp_governance_env["halt_file"],
+        operator_pubkey_path=pub_file,
     )
     
     def fake_writer(payload):
@@ -122,9 +128,24 @@ def test_risk001_elevated_approval_required(temp_governance_env):
             payload=payload,
             executor_func=fake_writer,
         )
+
+    # Legacy unsigned token -> rejected
+    with pytest.raises(ApprovalRequired):
+        kernel.intercept_and_execute(
+            tool_name="write_file",
+            payload=payload,
+            executor_func=fake_writer,
+            approval_token={"action_id": "act-legacy", "signature": "valid-sig-ed25519"},
+        )
         
-    # Valid structured token -> Success
-    valid_token = {"action_id": "act-123", "signature": "valid-sig-ed25519"}
+    # Signed AGL-V1 token from the pinned operator key -> Success
+    valid_token = create_approval_token(
+        action_id="act-123",
+        tool_name="write_file",
+        payload=payload,
+        private_seed=priv,
+        public_key=pub,
+    )
     res = kernel.intercept_and_execute(
         tool_name="write_file",
         payload=payload,

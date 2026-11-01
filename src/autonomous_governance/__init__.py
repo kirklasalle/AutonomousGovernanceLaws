@@ -10,13 +10,17 @@ Usage:
     kernel = GovernanceKernel(
         manifest_path="config/charter_manifest.json",
         ledger_path=".ledger/events.jsonl",
+        operator_pubkey_path=".keys/operator.pub",
     )
 
-    # Every tool call passes through the governance interceptor
+    # Every tool call passes through the governance interceptor. Read-only tools
+    # run directly; every other tool needs a signed single-use operator token
+    # (see `agy-governance approve`).
     result = kernel.intercept_and_execute(
         tool_name="write_file",
         payload={"target_path": "/app/output.txt", "content": "..."},
         executor_func=my_write_function,
+        approval_token=token,
     )
 """
 
@@ -25,6 +29,9 @@ from autonomous_governance.kernel import (
     GovernanceViolation,
     ApprovalRequired,
     PolicyTier,
+    CharterCheck,
+    check_charter_files,
+    resolve_project_root,
 )
 from autonomous_governance.security import (
     DPAPIKeyStore,
@@ -48,6 +55,9 @@ __all__ = [
     "GovernanceViolation",
     "ApprovalRequired",
     "PolicyTier",
+    "CharterCheck",
+    "check_charter_files",
+    "resolve_project_root",
     "DPAPIKeyStore",
     "create_approval_token",
     "verify_approval_token",

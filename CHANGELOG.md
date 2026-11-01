@@ -6,9 +6,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - 2026-11-01
 
-Documentation and tooling only. No changes to runtime code, tests, charter documents, or `config/charter_manifest.json` (digests v3.2.1 still verify).
+Runtime hardening (P0 defects from the audit) plus documentation and tooling. The charter documents and `config/charter_manifest.json` are unchanged (digests v3.2.1 still verify).
+
+### ⚠ Breaking changes
+- **Elevated actions fail closed without a pinned operator key.** `verify_approval_token` and the kernel now refuse every token unless a 32-byte operator public key is pinned (`operator_pubkey_path`). Run `agy-governance keygen` first.
+- **Only `AGL-V1` Ed25519 tokens are accepted.** The legacy unsigned/self-keyed token format is rejected.
+- **Unknown tools default to `ELEVATED`** (deny-by-default). Only the read-only allowlist (`GovernanceKernel.SAFE_TOOLS`) runs without approval.
+- **The ledger hash chain is verified at boot** (`verify_ledger_on_boot=True`). Ledgers written by 0.1.0 across several processes may be broken by the P4 defect: archive them before upgrading.
+- **Boot fails on an invalid configuration**: a manifest with no `charter_files`, or an `operator_pubkey_path` that is missing or not a 32-byte key (raw bytes or 64 hex characters).
+
+### Fixed
+- **P1/P2 self-approval**: tokens are verified only against the pinned key. An embedded `operator_pubkey` must match it. Timestamps must be integers; expired, inverted-window and future-dated tokens are rejected. Granted approvals are logged as `APPROVAL_GRANTED` (with key fingerprint and payload digest), and replay is blocked across restarts by scanning the ledger.
+- **P4/P5 ledger chain**: appends happen under a cross-process file lock (`<ledger>.lock`, `fcntl`/`msvcrt`) and read the last hash from disk, so several kernels, threads and processes extend one valid chain. A corrupt ledger tail blocks further appends (`LAW9-CHAIN`). Tolerates CRLF and a missing trailing newline. Optional `fsync_ledger`.
+- **P6 classifier evasion**: commands are NFKC-normalised, stripped of zero-width characters and parsed into shell segments (pipes, `&&`, `;`, redirects, `sudo`/`env`/`timeout` wrappers, `bash -c`). Protected-path checks cover absolute, relative, `..`-traversal and backslash forms. Secret key files are `PROHIBITED` even for read-only tools.
+- **P15 DPAPI fail-open**: `load_key` raises instead of returning an undecryptable DPAPI blob as key material. Key files are created with mode `0600`. `agy-governance approve` reports key-load errors and rejects seeds that are not 32 bytes.
+- **P18 working-directory dependence**: charter paths resolve against the project root (the manifest directory, or its parent when the manifest is in `config/`). `agy-governance verify`, the badge audit and the kernel share one checker (`check_charter_files`).
+- Executor exceptions are logged as `TOOL_FAILED` before re-raising. `ACTION_REFUSED`, `APPROVAL_REQUIRED` and `TOOL_EXECUTED` events record a `payload_sha256`.
 
 ### Added
+- **`tests/test_hardening.py`**: regression tests for every fix above, including a 3-process concurrent-append test and a parametrised classifier battery.
+- Public API: `check_charter_files`, `CharterCheck`, `resolve_project_root`.
 - **[`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md)**: evidence-based engineering audit.
   - Reproducible rubric; composite score **39/100** (≈70 projected after P0/P1).
   - 19 probe-backed findings (P1–P19).
@@ -34,12 +51,9 @@ Documentation and tooling only. No changes to runtime code, tests, charter docum
 - Supersession notices added to [`AUDIT_REPORT.md`](AUDIT_REPORT.md) and [`CRITICAL_AUDIT.md`](CRITICAL_AUDIT.md).
 
 ### Security
-- Known open defects (not yet fixed; see the audit §4):
-  - **Self-approval without a pinned operator key** (P1/P2).
-  - **Ledger chain reset across processes and concurrency** (P4/P5).
-  - **Classifier evasion** (P6).
-  - **DPAPI key-load fail-open** (P15).
-- Until fixed, always pass `operator_pubkey_path` and do not publish the 0.1.0 artifacts.
+- P1/P2, P4/P5, P6, P15 and P18 are fixed (see **Fixed** above). The classifier is still a pattern matcher, not a sandbox: treat it as defence in depth.
+- Still open: P9, where the default ledger and halt paths depend on the working directory. Pass absolute `ledger_path` and `halt_file` values.
+- Do not publish the 0.1.0 `dist/` artifacts. They contain the unfixed defects.
 
 ---
 

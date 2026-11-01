@@ -23,7 +23,7 @@ if _src_root not in sys.path:
 
 def cmd_verify(args: argparse.Namespace) -> int:
     """Verify charter integrity digests."""
-    from autonomous_governance.kernel import GovernanceKernel
+    from autonomous_governance.kernel import check_charter_files
 
     manifest_path = Path(args.manifest)
     if not manifest_path.exists():
@@ -34,26 +34,21 @@ def cmd_verify(args: argparse.Namespace) -> int:
     print("  CHARTER INTEGRITY VERIFICATION — LAW10-CHARTER")
     print("=" * 68)
 
-    with open(manifest_path, "r", encoding="utf-8") as f:
-        manifest = json.load(f)
+    try:
+        checks = check_charter_files(manifest_path)
+    except (OSError, ValueError) as exc:
+        print(f"  ❌ Charter manifest unreadable: {exc}")
+        return 1
 
-    charter_files = manifest.get("charter_files", {})
     all_passed = True
-
-    for file_name, expected_hash in charter_files.items():
-        file_path = Path(file_name)
-        expected_hash = expected_hash.lower()
-
-        if not file_path.exists():
-            print(f"  ❌ MISSING: {file_name}")
+    for check in checks:
+        if check.computed is None:
+            print(f"  ❌ MISSING: {check.name}")
             all_passed = False
-            continue
-
-        computed = GovernanceKernel._compute_sha256(file_path)
-        if computed == expected_hash:
-            print(f"  ✅ {file_name}: {computed[:32]}...")
+        elif check.ok:
+            print(f"  ✅ {check.name}: {check.computed[:32]}...")
         else:
-            print(f"  ❌ {file_name}: MISMATCH")
+            print(f"  ❌ {check.name}: MISMATCH")
             all_passed = False
 
     print()
@@ -199,7 +194,14 @@ def cmd_approve(args: argparse.Namespace) -> int:
         return 1
 
     is_dpapi = ".dpapi" in key_path.name
-    priv_seed = DPAPIKeyStore.load_key(key_path, is_dpapi=is_dpapi)
+    try:
+        priv_seed = DPAPIKeyStore.load_key(key_path, is_dpapi=is_dpapi)
+    except (OSError, RuntimeError) as exc:
+        print(f"  ❌ Could not load operator key {key_path}: {exc}")
+        return 1
+    if len(priv_seed) != 32:
+        print(f"  ❌ Operator key must be a 32-byte Ed25519 seed (got {len(priv_seed)} bytes): {key_path}")
+        return 1
 
     # Derive public key or load from .pub
     pub_path = key_path.with_name("operator.pub")

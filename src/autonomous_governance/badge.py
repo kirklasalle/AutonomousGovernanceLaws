@@ -51,23 +51,16 @@ def audit_repository_compliance(
         }
 
     # 2. Check Charter Manifest Integrity
-    from autonomous_governance.kernel import GovernanceKernel
+    from autonomous_governance.kernel import GovernanceKernel, check_charter_files
 
     charter_passed = False
     charter_count = 0
     if manifest_path.exists():
         try:
-            with open(manifest_path, "r", encoding="utf-8") as f:
-                manifest = json.load(f)
-            charter_files = manifest.get("charter_files", {})
-            charter_count = len(charter_files)
-            charter_mismatches = 0
-            for fn, expected_hash in charter_files.items():
-                fpath = repo_root / fn
-                if not fpath.exists() or GovernanceKernel._compute_sha256(fpath).lower() != expected_hash.lower():
-                    charter_mismatches += 1
-            charter_passed = (charter_count > 0 and charter_mismatches == 0)
-        except Exception:
+            checks = check_charter_files(manifest_path, project_root=repo_root)
+            charter_count = len(checks)
+            charter_passed = all(check.ok for check in checks)
+        except (OSError, ValueError):
             charter_passed = False
 
     # 3. Check Ledger Integrity

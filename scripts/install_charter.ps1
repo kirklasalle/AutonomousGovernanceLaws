@@ -17,7 +17,8 @@
 
 .PARAMETER Target
     Root directory of the project that will run GovernanceKernel / agy-governance.
-    Start the kernel from this directory: charter paths resolve against the working directory.
+    Pass its manifest to the kernel; charter paths resolve relative to that manifest.
+    Default ledger and halt paths still use the working directory.
 
 .PARAMETER Force
     Overwrite charter files that already exist in -Target but do not match the manifest.
@@ -136,5 +137,5 @@ if ($results | Where-Object { $_.Status -ne 'OK' }) {
 }
 
 Write-Host ("CHARTER VERIFIED in {0} (manifest v{1}, {2} files)." -f $Target, $targetManifest.version, $results.Count) -ForegroundColor Green
-Write-Host "Run GovernanceKernel / 'agy-governance verify' with this directory as the working directory."
+Write-Host "Verify with: agy-governance --manifest `"$Target\$ManifestRel`" verify"
 exit 0

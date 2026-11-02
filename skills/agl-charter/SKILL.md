@@ -5,9 +5,11 @@ description: Use in any session governed by the Autonomous Governance Laws (AGL)
 
 # Working under the AGL charter
 
-The `autonomous-governance-laws` plugin runs the AGL kernel before every tool call and
-loads the SHA-256-verified charter at session start. The session context lists the
-charter version, the verified document paths, the ledger, and the halt state.
+When enabled in a compatible host, the `autonomous-governance-laws` plugin runs
+the AGL kernel for calls delivered to its hook. Session-start context lists the
+verified charter paths, ledger and halt state when the host accepts that output.
+Legacy Copilot CLI may ignore it; read the charter from the plugin or project
+root instead. Instructions alone do not ensure that a hook is running.
 
 ## Rules
 
@@ -24,7 +26,8 @@ charter version, the verified document paths, the ledger, and the halt state.
    Before the call, state plainly what it does and what it changes. A RISK-001
    *denial* means the host cannot ask (an older Copilot CLI): do not retry the action
    in another form. Tell the operator what you need and that `copilot update`, or
-   `AGL_ELEVATED_DECISION=defer`, lets elevated actions through their approval flow.
+   `AGL_ELEVATED_DECISION=defer`, changes that behavior. `defer` uses the host's
+   permissions and does not guarantee a prompt; it is an operator decision.
 5. A denial citing **LAW2-HALT** means the operator stopped all work. Report your
    state and wait; do not try to clear the halt.
 
@@ -35,7 +38,7 @@ charter version, the verified document paths, the ledger, and the halt state.
 | Verify the charter digests | `agy-governance verify` |
 | Install the charter and loaders into a project | `agy-governance init --loaders` |
 | Verify a ledger's hash chain | `agy-governance --ledger <ledger path> audit-ledger` |
-| Stop every tool call | create `.halt` in the project root, or in the plugin data directory |
+| Deny subsequent calls delivered to the hook | create `.halt` in the project root, or in the plugin data directory; running work is not interrupted |
 
 `AGL_ELEVATED_DECISION` sets what happens to elevated actions: `ask` (default, the
 host prompts the operator), `defer` (the host's own permission settings decide), or

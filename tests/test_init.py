@@ -175,6 +175,16 @@ def test_repo_loaders_match_templates():
         assert actual.startswith(text), f"{rel} drifted from loaders.py; regenerate it"
 
 
+def test_antigravity_descriptions_are_quoted_yaml_scalars():
+    for rel, text in render_loaders('test "version": 1').items():
+        if rel.startswith(".agents/"):
+            frontmatter = text.split("---", 2)[1]
+            description = next(line for line in frontmatter.splitlines() if line.startswith("description: "))
+            value = json.loads(description.removeprefix("description: "))
+            assert 'test "version": 1' in value
+            assert "trigger: always_on" in frontmatter
+
+
 def test_wheel_packages_every_charter_file():
     tomllib = pytest.importorskip("tomllib")
     config = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
@@ -183,3 +193,4 @@ def test_wheel_packages_every_charter_file():
     for rel in [*CHARTER_NAMES, MANIFEST_REL]:
         assert force_include[rel] == f"autonomous_governance/charter/{rel}"
         assert f"/{rel}" in sdist
+    assert {"/AGENTS.md", "/CLAUDE.md", "/.agents"} <= set(sdist)

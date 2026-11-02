@@ -1,5 +1,9 @@
 # Implementation Plan: Autonomous Governance Laws Documentation Suite & Architecture Audit
 
+> **Historical plan, not implementation evidence.** Superseded by
+> [the November engineering audit](WORLD_CLASS_AUDIT_2026-11.md) and
+> [fresh verification](AUDIT_VERIFICATION_2026-11.md). Retained for provenance.
+
 Author: Antigravity AI
 Audited Project: **AutonomousGovernanceLaws** (authored by Kirk LaSalle)
 Target Artifacts: `README.md`, `PRD.md`, `CHANGELOG.md`, `USER_GUIDE.md`, `DEVELOPER_GUIDE.md`, and Formal Architectural Audit.

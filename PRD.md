@@ -10,10 +10,12 @@
 > [!NOTE]
 > **Implementation status (2026-11-02).** This PRD states *target* requirements. Against v0.1.0 after the P0 remediation ([`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md) §1a):
 > - The ledger is a **linear SHA-256 hash chain** that resumes across restarts and is locked across processes. Merkle trees and signed checkpoints are not yet implemented (P17).
-> - **NFR-01** is met by the kernel (0.49–0.71 ms, measured before the ledger lock was added). The agent-plugin hook adds about 0.75 s per host tool call on Windows, mostly Python start-up. **NFR-02** is not met (synchronous writes).
+> - **NFR-01** is not revalidated for the final build. The 0.49–0.71 ms kernel measurements predate locking; the approximately 0.75 s hook latency is historical. **NFR-02** is not met (synchronous writes).
 > - **NFR-04** fail-closed is met by the kernel: no ELEVATED action runs without a pinned operator key (P1/P2), and key loading fails closed (P15). Under the agent plugin, hook errors, oversized calls and decisions slower than 20 s are denied, which is before the host's 30 s timeout would let the call run. A hook that cannot start at all still fails open on Copilot CLI 0.0.4xx; that is host behaviour the plugin cannot override.
 > - **NFR-05** (post-quantum) is planned.
 > - Zero-bypass enforcement applies only to calls routed through `GovernanceKernel`. Since 2026-11-02 that includes coding-agent tool calls via the agent plugin; verified live in Copilot CLI only.
+> - **FR-02, FR-07 and FR-09 remain unimplemented:** `require_attestation` requires a public key, not signed configuration; CAC inheritance and diagnostic fallback do not ship. **FR-10** has only the generic elevated-tool gate, not a process boundary.
+> - The current [verification report](AUDIT_VERIFICATION_2026-11.md) supersedes earlier test counts and live-host assurance. Final-build live-host qualification is still open; a host not delivering or honoring hooks is outside the runtime guarantee.
 
 ---
 

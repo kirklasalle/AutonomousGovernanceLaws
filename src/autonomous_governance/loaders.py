@@ -9,6 +9,7 @@ SHA-256-pinned charter. See INSTALLATION_METHODS_REPORT.md section 3.1.4.
 
 from __future__ import annotations
 
+import json
 from typing import NamedTuple
 
 
@@ -65,10 +66,11 @@ def _claude_md(version: str) -> str:
 
 
 def _antigravity_rule(version: str, doc: CharterDocument) -> str:
+    description = f"AGL charter v{version} (authoritative, immutable): {doc.title}, {doc.summary}. Never edit."
     return (
         "---\n"
         "trigger: always_on\n"
-        f"description: AGL charter v{version} (authoritative, immutable): {doc.title}, {doc.summary}. Never edit.\n"
+        f"description: {json.dumps(description)}\n"
         "---\n"
         f"@[{doc.title}](../../{doc.file_name})\n"
     )

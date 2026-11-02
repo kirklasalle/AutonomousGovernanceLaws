@@ -218,6 +218,8 @@ class DPAPIKeyStore:
     def protect(cls, data: bytes, description: str = "Autonomous Governance Laws Operator Key") -> bytes:
         """Encrypt raw bytes using Windows DPAPI CryptProtectData."""
         if not cls.is_dpapi_available():
+            if sys.platform == "win32":
+                raise RuntimeError("DPAPI was requested but is unavailable on Windows; no key was written.")
             # Non-Windows fallback: return data with marker prefix
             return POSIX_FALLBACK_MARKER + data
 
@@ -337,7 +339,10 @@ def canonical_token_message(
     issued_at: int,
     expires_at: int,
 ) -> bytes:
-    """Construct the canonical binary message for Ed25519 signature verification."""
+    """Construct an AGL-V1 message; identifiers must not contain its field delimiter."""
+    for name, value in (("action_id", action_id), ("tool_name", tool_name)):
+        if not isinstance(value, str) or not value or ":" in value:
+            raise ValueError(f"AGL-V1 {name} must be a non-empty string without ':'")
     return f"{version}:{action_id}:{tool_name}:{payload_hash}:{issued_at}:{expires_at}".encode("utf-8")
 
 
@@ -465,14 +470,17 @@ def verify_approval_token(
     if len(sig_bytes) != 64:
         return False, "Invalid signature length in token"
 
-    message = canonical_token_message(
-        version,
-        action_id,
-        tool_name,
-        expected_payload_hash,
-        issued_at,
-        expires_at,
-    )
+    try:
+        message = canonical_token_message(
+            version,
+            action_id,
+            tool_name,
+            expected_payload_hash,
+            issued_at,
+            expires_at,
+        )
+    except ValueError as exc:
+        return False, str(exc)
 
     if not ed25519_verify(pinned_pubkey, message, sig_bytes):
         return False, "Cryptographic signature verification failed"

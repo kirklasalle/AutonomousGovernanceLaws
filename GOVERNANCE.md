@@ -1,7 +1,7 @@
 # GOVERNANCE.md
 ## Autonomous Governance Laws — Runtime Enforcement Status & Gap Registry
 
-**Document Version:** 1.0.0
+**Document Version:** 1.1.0 (verified 2026-11-02)
 **Status:** Living Document — Updated with each release
 **Author:** Kirk LaSalle (Founder & Supreme Operator)
 
@@ -9,7 +9,10 @@
 
 ## PURPOSE
 
-This document serves as the **single source of truth** for the runtime enforcement status of each of the 10 Laws for Intelligence Systems. CI pipelines check this file against the codebase to ensure it cannot claim more than is implemented.
+This document records the runtime controls associated with each Law, not proof that
+the whole Law is enforceable. CI checks charter digests and runs tests; it does
+**not** compare this prose against the implementation. The Covenant's statement
+below is a target that remains unimplemented.
 
 Per `AGENTIC_SACRED_COVENANT.md` Article III, Section 3.1:
 
@@ -21,22 +24,29 @@ Per `AGENTIC_SACRED_COVENANT.md` Article III, Section 3.1:
 
 | Law | Governing Concept | Runtime Status | Enforcement Mechanism | Test Invariant | Gap Disclosure |
 |:---:|---|:---:|---|---|---|
-| **1** | Human Preservation & Safety | **Enforced** | Deterministic tool filter (`RISK-001`, `LAW1-PROHIBIT`) | `test_law1_prohibit_destructive` | No real-time harm model. Blocks known-destructive commands only. |
-| **2** | Operator Obedience | **Enforced** | Immediate signal halt (`LAW2-HALT`) | `test_law2_operator_halt` | Halt latency target: <50ms. Not yet benchmarked. |
-| **3** | Subordinate Self-Defense | **Enforced** | Path isolation (`LAW3-SUBORDINATE`) | `test_law3_subordinate_self_protect` | Protects `.ledger/`, `config/`, key paths from agent writes. |
+| **1** | Human Preservation & Safety | **Partial** | Pattern-based classification and approval gate | `test_classifier_prohibits` in [test_hardening.py](tests/test_hardening.py) | No harm model or OS sandbox; obfuscated commands can evade patterns. |
+| **2** | Operator Obedience | **Partial** | `.halt` check before the next intercepted call | `test_law2_operator_halt` in [test_kernel.py](tests/test_kernel.py) | Does not terminate running work or guarantee a 50 ms response. |
+| **3** | Subordinate Self-Defense | **Partial** | Protected-path checks, not filesystem isolation | `test_law3_subordinate_self_constraint` in [test_kernel.py](tests/test_kernel.py) | Recognises charter and governance-state paths; not every alias or indirect shell write. |
 | **4** | Cross-System Enforcement | **Specified** | Context token inheritance (`CAC-001`) | *None yet* | CAC token format undefined. No parent→child security context propagation code. |
 | **5** | Judicial Power Prohibition | **Declarative** | System prompt & API scope constraints | *None yet* | **No runtime control.** No judicial-overreach detector. No automated intent classification. |
-| **6** | Data Privacy & Ownership | **Enforced** | Sandboxed I/O & vault credential injection | *None yet* | Enforcement depends on deployment environment sandboxing. |
+| **6** | Data Privacy & Ownership | **Partial** | Known secret-path checks; payload hashes instead of raw arguments | `test_classifier_prohibits` in [test_hardening.py](tests/test_hardening.py) | No sandbox, vault injection, DLP, consent model or general secret-read prevention. |
 | **7** | Truthfulness & Non-Deception | **Specified** | Deterministic telemetry instrumentation | *None yet* | **No hallucination detection.** Telemetry records actions but does not verify output truthfulness. |
 | **8** | Equity & Neutrality | **Declarative** | System prompt policy checks | *None yet* | **No runtime control.** No bias detection pipeline. No fairness scoring. Research-frontier problem. |
-| **9** | Verifiable Ledger & Fallback | **Enforced** | SHA-256 append-only chained logs (`LAW9-LEDGER`) | `test_law9_ledger_hash_chain` | Ledger implementation exists as reference. Fallback trigger conditions not yet formalized. |
-| **10** | Boundaries & Non-Replication | **Enforced** | Ed25519 attestation & spawn gates (`LAW10-APPROVAL`) | `test_law10_charter_tamper`, `test_law10_approval_unsigned` | Charter digest pinning specified. Spawn token format defined. |
+| **9** | Verifiable Ledger & Fallback | **Partial** | SHA-256 chain, restart continuity and cross-process lock | `test_ledger_chain_survives_reboots`, `test_ledger_valid_under_concurrent_processes` in [test_hardening.py](tests/test_hardening.py) | No signed checkpoint, external anchor, tail-truncation detection or diagnostic-fallback engine. |
+| **10** | Boundaries & Non-Replication | **Partial** | LF-normalised charter digests; pinned-key, single-use approvals in SDK | `test_law10_charter_tamper_fails_boot` in [test_kernel.py](tests/test_kernel.py); approval tests in [test_hardening.py](tests/test_hardening.py) | `require_attestation` requires a public key; it does not verify signed configuration. No CAC delegation. Plugin prompts are not signed SDK approvals. |
 
 ### Status Definitions
 
-- **Enforced:** Runtime code exists that deterministically prevents violations. Backed by automated tests.
+- **Partial:** A specific control is implemented and tested; the full ethical or operational Law is not guaranteed.
 - **Specified:** Architectural design is complete. Reference code samples exist. Not yet packaged or tested as a deployable module.
 - **Declarative:** Governed by constitutional mandate and policy evaluation. No automated runtime enforcement mechanism exists or is currently feasible.
+
+The SDK protects only calls routed through it by trusted application code.
+The plugin protects only calls delivered to a successfully running hook by a
+compatible host. Host startup failures, disabled hooks, arbitrary same-user code
+and filesystem access are outside that boundary. See
+[verification evidence](AUDIT_VERIFICATION_2026-11.md) and
+[installation limits](INSTALLATION_METHODS_REPORT.md#1-bottom-line).
 
 ---
 
@@ -77,4 +87,4 @@ The **Intelligence Governance Council** is the governing body responsible for re
 
 ---
 
-*This document is referenced by `AGENTIC_SACRED_COVENANT.md` Article III and is verified by CI against the implemented codebase.*
+*Referenced by `AGENTIC_SACRED_COVENANT.md` Article III. Prose-to-code verification remains a manual audit task.*

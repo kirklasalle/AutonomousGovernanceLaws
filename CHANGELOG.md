@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Runtime hardening (P0 defects from the audit), the `init` installer, an agent plugin for Copilot CLI, VS Code and Claude Code, plus documentation and tooling. The charter documents and `config/charter_manifest.json` are unchanged (digests v3.2.1 still verify).
 
 ### ⚠ Breaking changes
+- **AGL-V1 identifiers may not contain `:`.** Rejecting the wire delimiter in action IDs and tool names prevents signature field-repartitioning. Ordinary existing V1 tokens remain compatible.
 - **Elevated actions fail closed without a pinned operator key.** `verify_approval_token` and the kernel now refuse every token unless a 32-byte operator public key is pinned (`operator_pubkey_path`). Run `agy-governance keygen` first.
 - **Only `AGL-V1` Ed25519 tokens are accepted.** The legacy unsigned/self-keyed token format is rejected.
 - **Unknown tools default to `ELEVATED`** (deny-by-default). Only the read-only allowlist (`GovernanceKernel.SAFE_TOOLS`) runs without approval.
@@ -16,6 +17,9 @@ Runtime hardening (P0 defects from the audit), the `init` installer, an agent pl
 - **Boot fails on an invalid configuration**: a manifest with no `charter_files`, or an `operator_pubkey_path` that is missing or not a 32-byte key (raw bytes or 64 hex characters).
 
 ### Fixed
+- **Verification follow-up (2026-11-02):** independently reproduced and fixed ambiguous approval identifiers, plaintext fallback when DPAPI is requested but unavailable on Windows, missing loader files in source distributions, and unquoted Antigravity YAML descriptions. Existing installed loaders are never overwritten by `init`; merge their quoted descriptions manually.
+- Removed the unsafe duplicate interceptor and misleading TypeScript/fallback examples from the developer guide. Corrected the governance matrix, halt semantics, installation status and historical HTML claims.
+- Added a committed verification report and machine-readable evidence, including source hashes, test outcomes, artifact checks and primary-source retrieval records from the standalone local MCP.
 - **P1/P2 self-approval**: tokens are verified only against the pinned key. An embedded `operator_pubkey` must match it. Timestamps must be integers; expired, inverted-window and future-dated tokens are rejected. Granted approvals are logged as `APPROVAL_GRANTED` (with key fingerprint and payload digest), and replay is blocked across restarts by scanning the ledger.
 - **P4/P5 ledger chain**: appends happen under a cross-process file lock (`<ledger>.lock`, `fcntl`/`msvcrt`) and read the last hash from disk, so several kernels, threads and processes extend one valid chain. A corrupt ledger tail blocks further appends (`LAW9-CHAIN`). Tolerates CRLF and a missing trailing newline. Optional `fsync_ledger`.
 - **P6 classifier evasion**: commands are NFKC-normalised, stripped of zero-width characters and parsed into shell segments (pipes, `&&`, `;`, redirects, `sudo`/`env`/`timeout` wrappers, `bash -c`). Protected-path checks cover absolute, relative, `..`-traversal and backslash forms. Secret key files are `PROHIBITED` even for read-only tools.
@@ -24,6 +28,7 @@ Runtime hardening (P0 defects from the audit), the `init` installer, an agent pl
 - Executor exceptions are logged as `TOOL_FAILED` before re-raising. `ACTION_REFUSED`, `APPROVAL_REQUIRED` and `TOOL_EXECUTED` events record a `payload_sha256`.
 
 ### Added
+- RFC 8032 test vector 1 regressions for both pure-Python and accelerated Ed25519 backends.
 - **`agy-governance init [--target DIR] [--force] [--loaders] [--dry-run]`** (P19): installs the three charter documents and `config/charter_manifest.json` into a project byte-for-byte, then verifies them.
   - The wheel and sdist now ship the reference charter (`autonomous_governance/charter/`). The source copy is verified before anything is copied.
   - Every change is planned first. A differing file is a conflict and nothing is written unless `--force` is given; files that differ only in line endings count as installed.

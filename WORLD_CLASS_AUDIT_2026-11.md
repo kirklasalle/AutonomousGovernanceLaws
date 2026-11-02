@@ -12,6 +12,13 @@
 | **Supersedes** | All health scores and market figures in documents dated before 2026-11-01 |
 | **Companion** | [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md): charter-copy vs. plugin installation analysis (adds P18, P19) |
 | **Re-assessed** | 2026-11-02 after the remediation commits: composite **58.5 / 100** (§1a) |
+| **Fresh verification** | [AUDIT_VERIFICATION_2026-11.md](AUDIT_VERIFICATION_2026-11.md): 213 tests collected; 83.13% line / 77.44% branch coverage on Windows Python 3.10; actual artifact checks; four additional implementation fixes. [Persistent evidence](audit/evidence-2026-11.json). |
+
+> **Reading this report:** §1 and §§2–8 preserve the original baseline unless
+> explicitly marked otherwise. §1a is the earlier author's reassessment.
+> The linked verification report is the current evidence authority: it does not
+> independently establish the earlier live-host or Linux claims. Retain 58.5 as
+> an internal assessment, not an external certification or proof of zero risk.
 
 > [!IMPORTANT]
 > **Bottom line.** AGL is a well-conceived, cleanly structured **pre-alpha** library with genuinely differentiated ideas (SHA-256-pinned constitutional charter, payload-bound single-use Ed25519 operator approvals, zero-dependency local-first design). It is **not production-ready**: in its **default configuration** an agent can self-approve any elevated action (P1/P2), the tamper-evident ledger breaks across restarts and under concurrency (P4/P5/P17), and the risk classifier is trivially evaded (P6). Several documents overstate maturity ("Production Alpha", "Merkle ledger", "Security 99/100", "certified for production"). The composite engineering score under a reproducible rubric is **39 / 100**; completing the P0/P1 remediation plan in §8 projects to **≈70 / 100**.
@@ -78,7 +85,7 @@ Same rubric and weights as §1. Evidence comes from:
 
 ---
 
-## 2. METHODOLOGY & REPRODUCIBILITY
+## 2. BASELINE METHODOLOGY & REPRODUCIBILITY
 
 ### 2.1 Environment
 - Windows 11, Python 3.14 (`G:\Program Files\Python314\python.exe`; it carries `cryptography`, `pytest`, `mcp`). The system Python 3.15 lacks the dev dependencies.
@@ -425,8 +432,8 @@ Verification methods:
 
 ## APPENDIX B: CATALOGUE
 
-- 40 git-tracked files at `1a0f616`. A per-file SHA-256 manifest was generated during the audit and is held in the auditor's session store (not committed, to avoid a second source of truth beside [`config/charter_manifest.json`](config/charter_manifest.json)).
-- IDS knowledge-graph lineage confirmed the call paths `intercept_and_execute → evaluate_risk / _verify_approval_token → security.verify_approval_token → _log_event`. This is the path on which P1, P2, P4, P5, P6, P16, and P17 sit.
+- 40 git-tracked files at baseline `1a0f616`. That original catalogue was session-local. The current [catalogue and verification record](audit/evidence-2026-11.json) is committed and identifies the inspected worktree by hashes. It is audit evidence, not a replacement for the authoritative charter manifest.
+- IDS records structural AST relationships, not verified runtime call paths. Fresh source review and execution tests establish the approval/ledger behavior; do not infer it from IDS lineage alone.
 
 ## APPENDIX C: MCP FLEET MEMORY & DEFECTS
 

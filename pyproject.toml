@@ -79,6 +79,10 @@ include = [
     "/AGENTIC_PRIME_DIRECTIVE.md",
     "/AGENTIC_SACRED_COVENANT.md",
     "/config/charter_manifest.json",
+    # Loader-template parity is tested from source archives as well as checkouts.
+    "/AGENTS.md",
+    "/CLAUDE.md",
+    "/.agents",
     # Agent plugin (Copilot CLI, VS Code, Claude Code); tests/test_plugin_hooks.py needs it.
     "/hooks",
     "/skills",

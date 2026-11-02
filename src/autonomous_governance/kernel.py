@@ -420,10 +420,10 @@ class PolicyTier(Enum):
 
 
 class GovernanceViolation(Exception):
-    """Raised when an action violates Law 1, Law 3, Law 5, or Law 10.
+    """Raised when a configured governance check refuses an action.
 
     Actions classified as PROHIBITED are dropped unconditionally.
-    This exception cannot be caught and suppressed by agent code.
+    Trusted callers must not catch this exception and execute the refused action.
     """
 
     def __init__(self, message: str, law_ref: str = ""):
@@ -444,8 +444,8 @@ class ApprovalRequired(Exception):
 class GovernanceKernel:
     """Core governance interceptor implementing the 10 Laws at runtime.
 
-    Every tool call, shell command, file mutation, and sub-agent spawn
-    passes through this kernel before execution.
+    Callers must route tool calls, shell commands, file mutations and sub-agent
+    spawns through this kernel. It is not a process or operating-system sandbox.
 
     Classification is deny-by-default: only tools in ``SAFE_TOOLS`` run without
     approval, and every other tool, known or unknown, is ELEVATED and needs a
@@ -923,8 +923,8 @@ class GovernanceKernel:
         """Check if the emergency operator halt has been triggered.
 
         Implements: LAW2-HALT
-        The operator can create a .halt file to immediately terminate
-        all agent execution threads.
+        The operator can create a .halt file to refuse the next intercepted call.
+        This does not cancel an executor that is already running.
         """
         return self.halt_file.exists()
 
@@ -1241,7 +1241,8 @@ class GovernanceKernel:
         Walks the entire ledger and verifies that:
         1. Each event's hash matches its computed hash
         2. Each event's prev_event_hash matches the prior event's hash
-        3. No events have been deleted, reordered, or tampered with
+        This detects internal deletion, reordering and edits, but not tail
+        truncation or a complete rewrite with recomputed hashes.
 
         Returns:
             Dict with 'valid', 'total_events', 'broken_links', 'errors'

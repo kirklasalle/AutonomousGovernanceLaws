@@ -61,7 +61,7 @@ To enforce configuration attestation (`LAW10-APPROVAL`), the runtime requires yo
 The fastest and most secure method is using the built-in `agy-governance keygen` command, which automatically binds your private key to your Windows login credentials via native Windows DPAPI (`crypt32.dll`):
 
 ```bash
-# Generate operator keypair with Windows DPAPI hardware-level encryption at rest
+# Generate operator keypair with Windows-user-bound DPAPI encryption at rest
 agy-governance keygen --out .keys --dpapi
 ```
 This generates:
@@ -167,13 +167,15 @@ This generates a tamper-evident `AGL-V1` token cryptographically bound to the SH
 > **Single-Use Replay Protection:** Once used, the `action_id` is recorded as `APPROVAL_GRANTED` in `.ledger/events.jsonl`, and the kernel checks the ledger before accepting any token. Reusing a token, even after a restart or from another process sharing the ledger, or changing a single byte of the payload causes immediate refusal.
 
 > [!IMPORTANT]
-> Tokens are verified only against the operator public key pinned in the runtime (`operator_pubkey_path`). A runtime without a pinned key refuses **every** token, so elevated actions cannot run there. Under the agent plugin, approval happens in the host's own prompt instead of with a token.
+> Tokens are verified only against the operator public key pinned in the runtime (`operator_pubkey_path`). A runtime without a pinned key refuses **every** token. AGL-V1 action IDs and tool names must be non-empty and contain no colon. Keep private keys outside agent-readable storage. Plugin approval uses host permissions instead of signed tokens; `defer` may not prompt.
 
 ---
 
 ## 4. EMERGENCY OPERATOR HALT (`LAW2-HALT`)
 
-If an agent exhibits anomalous behavior, enters a recursive loop, or you need to immediately stop execution for any reason, you can trigger an **Emergency Operator Halt**.
+Create an **Emergency Operator Halt** to refuse subsequent intercepted calls.
+It does not interrupt an executor or recursive loop already running; stop such
+work through the host or operating system.
 
 ```mermaid
 sequenceDiagram
@@ -290,4 +292,3 @@ To propose an update or extension to the governance policies:
 
 ---
 *Autonomous Governance Laws: Protecting Humanity, Empowering Operators, Governing AI.*
-

@@ -536,6 +536,12 @@
 </header>
 
 <main class="container">
+  <aside role="note" style="padding: 16px; border: 1px solid #f59e0b; margin-top: 20px;">
+    <strong>Verification update - November 2026:</strong> hardened pre-alpha, not production-ready.
+    <a href="AUDIT_VERIFICATION_2026-11.md">Current checks and limitations</a> |
+    <a href="MARKET_AUDIT.md">Market comparison</a>.
+    The simulator is illustrative JavaScript, not the Python enforcement kernel.
+  </aside>
 
   <!-- ─── HERO ─── -->
   <section class="hero">
@@ -556,16 +562,16 @@
       <div class="metric-desc">Constitutional Laws</div>
     </div>
     <div class="metric-card">
-      <div class="metric-val" style="color: var(--accent-emerald);">7 / 7</div>
-      <div class="metric-desc">CI Tests Passing</div>
+      <div class="metric-val" style="color: var(--accent-emerald);">213</div>
+      <div class="metric-desc">Tests Collected (see verification)</div>
     </div>
     <div class="metric-card">
-      <div class="metric-val" style="color: var(--accent-teal);">100%</div>
-      <div class="metric-desc">NIST AASI Aligned</div>
+      <div class="metric-val" style="color: var(--accent-teal);">Partial</div>
+      <div class="metric-desc">Controls, Not Certification</div>
     </div>
     <div class="metric-card">
-      <div class="metric-val" style="color: var(--accent-purple);">71 / 100</div>
-      <div class="metric-desc">Composite Health Score</div>
+      <div class="metric-val" style="color: var(--accent-purple);">58.5 / 100</div>
+      <div class="metric-desc">Internal Engineering Assessment</div>
     </div>
   </div>
 
@@ -602,7 +608,7 @@
           <span class="law-tag tag-physical">Operator Supremacy</span>
         </div>
         <h3 class="law-title">Human Obedience & Hard Override</h3>
-        <p class="law-body">An Intelligence System must obey orders given by human beings, except where such orders would conflict with the First Law. Supported by sub-50ms emergency operator halt signals.</p>
+        <p class="law-body">An Intelligence System must obey orders given by human beings, except where such orders would conflict with the First Law. The implemented halt refuses the next intercepted call; it does not stop running work.</p>
       </div>
 
       <!-- Law 3 -->

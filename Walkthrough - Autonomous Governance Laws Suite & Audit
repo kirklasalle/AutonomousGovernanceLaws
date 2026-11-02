@@ -1,5 +1,10 @@
 # Walkthrough: Autonomous Governance Laws Suite & Audit
 
+> **Historical walkthrough.** The "PASSED" statements below were design claims,
+> not retained runtime test results, and are withdrawn as assurance evidence.
+> Use [the current verification report](AUDIT_VERIFICATION_2026-11.md) and
+> [governance gap matrix](GOVERNANCE.md) instead.
+
 Author: **Antigravity AI**  
 Founder & Operator: **Kirk LaSalle**  
 Audited Repository: [`AutonomousGovernanceLaws`](file:///d:/Projects/AutonomousGovernanceLaws)  

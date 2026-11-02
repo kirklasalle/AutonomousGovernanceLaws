@@ -228,14 +228,18 @@ def cmd_approve(args: argparse.Namespace) -> int:
             except Exception:
                 payload = {"raw": args.payload}
 
-    token = create_approval_token(
-        action_id=args.action_id,
-        tool_name=args.tool,
-        payload=payload,
-        private_seed=priv_seed,
-        public_key=pub_key,
-        ttl_seconds=args.ttl,
-    )
+    try:
+        token = create_approval_token(
+            action_id=args.action_id,
+            tool_name=args.tool,
+            payload=payload,
+            private_seed=priv_seed,
+            public_key=pub_key,
+            ttl_seconds=args.ttl,
+        )
+    except ValueError as exc:
+        print(f"  ❌ Could not create approval token: {exc}")
+        return 1
 
     token_json = json.dumps(token, indent=2)
     if args.out:

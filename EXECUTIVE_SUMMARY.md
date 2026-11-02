@@ -1,22 +1,31 @@
 # EXECUTIVE SUMMARY & CONSOLIDATED SCORECARD
 
-**Document Version:** 3.1.0 (Remediation Update)  
+**Document Version:** 3.2.0 (Fresh re-execution and evidence correction)
 **Date:** November 2, 2026 (baseline re-audit: November 1, 2026)  
 **Prepared For:** Kirk LaSalle, Founder & Supreme Operator  
 **Classification:** Board-Ready Executive Scorecard  
 **Supersedes:** v2.0.0 "Production Attestation Update" (October 24, 2026), retained in git history  
-**Evidence Base:** [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md) (engineering) · [`MARKET_AUDIT.md`](MARKET_AUDIT.md) v2.0.0 (market) · [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md) (distribution)  
+**Evidence Base:** [fresh verification](AUDIT_VERIFICATION_2026-11.md), [engineering rubric](WORLD_CLASS_AUDIT_2026-11.md), [market assessment v2.2.0](MARKET_AUDIT.md), [installation comparison](INSTALLATION_METHODS_REPORT.md)
 **GitHub Repository:** [`kirklasalle/AutonomousGovernanceLaws`](https://github.com/kirklasalle/AutonomousGovernanceLaws)
 
 > [!IMPORTANT]
-> v2.0.0 of this summary rated the project **93.4/100, "production-ready"**. That rating had no reproducible rubric and is **withdrawn**. The November 2026 empirical re-audit scores the codebase **39/100: pre-alpha, not production-ready**. The main reason is that, in the default configuration, an agent can approve its own elevated actions. Completing the P0/P1 plan in §4 projects to about **70/100**.
+> The former **93.4/100, "production-ready"** rating is withdrawn. The baseline
+> was **39/100** before remediation; the retained internal assessment is
+> **58.5/100, hardened pre-alpha**. Read the
+> [fresh verification report](AUDIT_VERIFICATION_2026-11.md) and
+> [persistent evidence](audit/evidence-2026-11.json), not test counts or live-host
+> assurances from earlier revisions.
 
 > [!NOTE]
 > **Update, November 2, 2026.**
-> - **P0 security plan complete.** Agent self-approval is closed: tokens verify only against a pinned operator key. The ledger survives restarts and concurrent processes, key loading fails closed, and the classifier is hardened.
-> - **Two install routes now ship:** `agy-governance init` (charter copy, verified) and an agent plugin. The plugin was verified live in GitHub Copilot CLI.
+> - **Identified P0 fixes verified.** Tokens require a pinned operator key; restart and concurrent-writer regressions pass. This does not close all security risks.
+> - **Two install routes now ship:** `agy-governance init` (charter copy, verified) and an experimental agent plugin. Earlier live Copilot results are historical, not final-build qualification.
 > - **Score: 58.5/100, hardened pre-alpha** (self-assessed, same rubric; [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md) §1a).
-> - **Still not production-ready.** Remaining work: P9, P13, P14, P17, the 85% coverage gate, SAST, PyPI, and live Claude Code / VS Code trials.
+> - **Still not production-ready.** Remaining work: P9, P10, P13, P14, P17, coverage/static-analysis gates, release provenance and live trials in every supported host.
+> - **Fresh verification correction:** four additional gaps were reproduced and
+>   fixed: approval field ambiguity, unavailable Windows DPAPI fallback, sdist
+>   loader omissions and malformed loader YAML. Hook protocols and actual package
+>   installs pass; final-build live-host qualification remains open for all hosts.
 
 ---
 
@@ -33,7 +42,7 @@
    - the `laws-lint` static checker;
    - a compliance-badge CLI (`agy-governance`);
    - `agy-governance init`, which installs the pinned charter into a project and verifies it;
-   - an agent plugin (Copilot CLI, Claude Code, VS Code manifests) that runs every host tool call through the kernel.
+   - an agent plugin (Copilot CLI, Claude Code, VS Code manifests) that classifies calls delivered by the host; it is not universal interception.
 
 **Current stage:** **Hardened pre-alpha (v0.1.0).**
 
@@ -41,14 +50,14 @@
 |---|---|
 | Distribution | Source install, `agy-governance init`, or agent plugin from the repository; not yet on PyPI |
 | Dependencies | Zero runtime dependencies |
-| Tests and CI | 204 tests collected: 203 pass on Windows and 201 on Linux (the rest are platform-specific skips); **79% line coverage** on Linux |
-| Open defects | 0 critical; 0 high open (classifier P6 mitigated, not eliminated); P9, P10, P13, P14, P17 open (§3) |
+| Tests | **213 collected**: Windows Python 3.10, 211 pass / 2 skip; Python 3.14, 212 pass / 1 skip. **83.13% line / 77.44% branch** coverage on 3.10. Linux not freshly rerun. |
+| Open risks | Host startup fail-open, pattern evasion and ledger truncation remain material risks; P9, P10, P13, P14, P17 open. No zero-high-risk assurance. |
 
-**Market context (cited).** AI governance *platform* spend is **$492M in 2026, passing $1B by 2030** (Gartner). Broader market estimates for 2026 are **$418–419M, growing 34–36% a year** (Grand View, Precedence). The **EU AI Omnibus** (in force 27 July 2026) moved EU AI Act high-risk obligations:
+**Market context (publisher estimates, not AGL's serviceable market).** Grand View and Precedence body figures estimate **$418–419M for 2026**, with **34–36% forecast CAGR**. Grand View's retrieved title conflicts with its body; see the source caveat. The earlier Gartner platform estimate was not freshly retrieved. The Commission's current timeline, incorporating the **EU AI Omnibus** (in force 27 July 2026), lists:
 - Annex III systems: **2 December 2027**.
 - Annex I systems: **2 August 2028**.
 
-The OWASP **Top 10 for Agentic Applications 2026** is now the de facto agent-risk checklist. Sources are in [`MARKET_AUDIT.md`](MARKET_AUDIT.md) §8.
+The OWASP **Top 10 for Agentic Applications 2026** is a relevant risk taxonomy, not an AGL certification. Sources and verification limits are in [`MARKET_AUDIT.md`](MARKET_AUDIT.md) §8.
 
 ---
 
@@ -66,11 +75,11 @@ Reproducible rubric: 0–10 per dimension, weighted. Full evidence is in [`WORLD
 │ 🏛️ Architecture & modularity      │  10%   │ 6/10 │ 7/10 │ Host adapter; P9 open     │
 │ 🔐 Security correctness           │  25%   │ 3/10 │ 6/10 │ Self-approval closed      │
 │ 📜 Audit-trail integrity          │  15%   │ 3/10 │ 6/10 │ Chain resumes; P17 open   │
-│ 🧪 Testing & QA                   │  15%   │ 4/10 │ 6/10 │ 204 tests, 79% coverage   │
+│ 🧪 Testing & QA                   │  15%   │ 4/10 │ 6/10 │ 213 tests, 83% lines     │
 │ 🔎 Static analysis (laws-lint)    │   5%   │ 3/10 │ 3/10 │ Exempts its own kernel    │
 │ 🔧 DevEx, CI & packaging          │  10%   │ 5/10 │ 6/10 │ init + plugin; no PyPI    │
 │ 📖 Documentation accuracy         │  10%   │ 3/10 │ 6/10 │ Over-claims withdrawn     │
-│ ⚡ Performance                     │   5%   │ 7/10 │ 6/10 │ Hook adds ~0.75 s/call    │
+│ ⚡ Performance                     │   5%   │ 7/10 │ 6/10 │ Needs fresh benchmarks    │
 │ ⚖️ Standards alignment             │   5%   │ 4/10 │ 4/10 │ No ASI/Art.12 mapping     │
 ├──────────────────────────────────┼────────┼──────┼──────┼───────────────────────────┤
 │ COMPOSITE                        │  100%  │  39  │ 58.5 │ HARDENED PRE-ALPHA        │
@@ -82,7 +91,7 @@ Vision and constitutional design are strong, but are not scored as engineering. 
 
 ---
 
-## 3. RISK REGISTER — TOP 10 (NOVEMBER 2026)
+## 3. RISK REGISTER (NOVEMBER 2026)
 
 | # | Risk | Severity | Status | Evidence / next step |
 |---|---|:-:|:-:|---|
@@ -92,9 +101,9 @@ Vision and constitutional design are strong, but are not scored as engineering. 
 | R4 | **Key storage fails open** on DPAPI error; plaintext keys off Windows (P15). | 🟠 HIGH | 🟡 **MOSTLY CLOSED** | Decryption failure now raises; key files are 0600. Keys off Windows are still unencrypted at rest. |
 | R5 | **Documentation over-claims** ("Merkle", "production-ready", 93.4) damage credibility. | 🟠 HIGH | 🟡 **IN PROGRESS** | Corrected 2026-11-01 across current-state docs |
 | R6 | **Single maintainer / single operator key** (bus factor = 1); M-of-N not implemented. | 🟠 HIGH | **OPEN** | Recruit maintainers; quorum on roadmap |
-| R7 | **Distribution gap.** Not on PyPI; the wheel shipped no charter, so `pip install` alone could not boot (P19); charter paths were CWD-relative (P18); the repo was not an agent plugin. | 🟡 MEDIUM | 🟡 **MOSTLY CLOSED** | P18/P19 fixed. `agy-governance init` and the agent plugin ship (plugin verified live in Copilot CLI). **Open:** PyPI 0.2.0, plugin marketplace listing, live Claude Code / VS Code trials. See [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md). |
+| R7 | **Distribution gap.** Baseline wheel omitted the charter; paths were CWD-relative; no host plugin shipped. | 🟡 MEDIUM | 🟡 **MOSTLY CLOSED** | Real wheel/sdist checks pass; `init` and plugin ship. **Open:** published signed release, plugin listing and final live qualification in all supported hosts. See [installation comparison](INSTALLATION_METHODS_REPORT.md). |
 | R8 | **Competitive compression.** Microsoft Agent Governance Toolkit (MIT) and hyperscaler-bundled controls. | 🟡 MEDIUM | MONITORED | Position as embeddable kernel ([`MARKET_AUDIT.md`](MARKET_AUDIT.md) §7) |
-| R9 | **Test gaps.** No restart, concurrency, evasion or CLI tests; one test codifies the R1 bypass. | 🟡 MEDIUM | 🟡 **MOSTLY CLOSED** | 22 → 204 tests; probe, restart, concurrency and plugin tests added; the R1 test was rewritten. **Open:** 85% coverage gate (now 79%), CLI coverage 39%. |
+| R9 | **Test gaps.** Baseline lacked restart, concurrency, evasion and CLI tests. | 🟡 MEDIUM | 🟡 **MOSTLY CLOSED** | 213 tests collected; 83.13% line / 77.44% branch coverage on Windows 3.10; CLI lines 50.21%. Coverage gate and final live-host qualification remain open. |
 | R10 | **Post-quantum migration.** Ed25519 only; no algorithm agility. | ⚪ LOW | PLANNED | FIPS 204 ML-DSA hybrid, H2 2027 |
 | R11 | **Plugin fail-open edges (new).** Host hook timeouts fail open. On Copilot CLI 0.0.4xx, a hook that cannot start (no PowerShell 7 on Windows) fails open, and elevated actions are denied because those builds cannot ask. | 🟡 MEDIUM | 🟡 **MITIGATED** | The hook denies any call still undecided after 20 s, before the host's 30 s timeout, and caps input size. Claude Code's hook sets `onFailure: block`. Copilot's `powershell` command denies when PowerShell cannot load the wrapper. **Open:** a hook that cannot start at all on Copilot CLI 0.0.4xx; a hang before Python starts. Operators: run `copilot update` and install PowerShell 7 (README §1b). |
 
@@ -132,7 +141,7 @@ gantt
     Replay set, payload/approval binding (P3/P7/P16) :done, p1d, 2026-11-01, 2026-11-01
     Signed checkpoints (P17), P9 ledger paths        :active, p1a, 2026-11-16, 2026-12-14
     Coverage gate 85%, SAST, CLI tests, linter fixes :p1b, 2026-11-16, 2026-12-14
-    Live plugin trials: Claude Code, VS Code         :p1e, 2026-11-16, 2026-12-14
+    Final live trials: Copilot, Claude Code, VS Code :p1e, 2026-11-16, 2026-12-14
 
     section P2 Release
     PyPI 0.2.0 (Trusted Publishing, Sigstore, SBOM)  :p2, 2027-01-04, 2027-01-31
@@ -148,11 +157,11 @@ gantt
 
 ### 4.1 Immediate directives
 
-P0 (formerly the immediate directives) is **complete**: R1 is closed, and R2–R4 are closed or mitigated in `aae4989`. Next:
+The identified P0 repairs and follow-up regressions are verified, not a blanket security clearance. Next:
 1. **Close R2.** Signed ledger checkpoints (P17) and project-rooted default paths (P9).
 2. **Close R9.** An 85% coverage gate in CI, CLI tests, and Bandit/Semgrep plus a type check.
 3. **Fix the linter (P13/P14)** so that `laws-lint` scans its own kernel and cites the canonical law labels.
-4. **Verify the plugin live** in Claude Code and VS Code; Copilot CLI is done.
+4. **Qualify the final plugin live** in Copilot CLI, Claude Code and VS Code, including host-launch failure cases.
 5. **Publish a security advisory** for R1 (fixed) *before* the PyPI release.
 
 ### 4.2 Deferred until P1 is complete
@@ -165,23 +174,27 @@ P0 (formerly the immediate directives) is **complete**: R1 is closed, and R2–R
 
 | Due diligence dimension | Readiness | Evidence |
 |---|:---:|---|
-| Unique IP & defensible ideas | ✅ Ready | SHA-256-pinned constitutional charter; payload-bound single-use Ed25519 approvals. Not marketed by any surveyed competitor. |
+| Distinct product hypothesis | 🟡 Unvalidated | Pinned charter plus signed SDK approvals; no exclusivity, patent defensibility or customer adoption established |
 | Market timing & regulatory fit | 🟡 Partial | Real demand. The EU high-risk date moved to Dec 2027, so there is time but no urgency narrative. |
 | Technical architecture | 🟡 Partial | Sound shape. Hash-chained (not Merkle) ledger with integrity gaps. |
-| Working prototype | ✅ Ready | 0.1.0 SDK, CLI, `init`, agent plugin, 204 tests on two OSes, CI |
+| Working prototype | ✅ Evaluation only | SDK, CLI, `init`, experimental plugin, 213 tests collected; actual wheel/sdist checks and fresh Windows runs |
 | Security posture | 🟡 Partial | R1 closed; R2–R4 mostly closed or mitigated; P17 and the plugin's fail-open edges (R11) remain |
 | Compliance tooling | 🟡 Partial | Badge and linter exist but are self-referential; no OWASP ASI or EU article evidence export |
 | Open-source infrastructure | ✅ Ready | Apache-2.0, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, CI |
 | Governance structure | ✅ Ready | Council, quorum, and amendment protocol in [`GOVERNANCE.md`](GOVERNANCE.md) |
 | Distribution & ecosystem | 🟡 Partial | `init` and the agent plugin ship; not on PyPI or a plugin marketplace; no framework adapters; bus factor 1 |
 
-**Investment-readiness estimate:** about **60–90 days from November 2** (estimate). That covers the rest of P1, PyPI 0.2.0, and one external design partner. It replaces the 90–120 days estimated before P0 was finished.
+**Investment readiness is not established.** Earlier 60–90-day estimates were
+planning assumptions, not validated delivery forecasts. Evidence gates include
+release assurance, independent review and external design-partner validation.
 
 ---
 
 ## 6. CONSOLIDATED AUDIT VERDICT
 
-**The vision is distinctive and the core design ideas are real differentiators. As of November 2 the implementation is a hardened pre-alpha: the self-approval bypass is closed and the kernel can be enforced inside a live agent host, but it is not yet a production security control.**
+**The implementation is a hardened pre-alpha with a plausible narrow SDK/plugin
+position. Identified approval defects are fixed and package/protocol checks
+pass; production assurance and final live-host qualification remain open.**
 
 The three August 2026 mandates were:
 
@@ -204,11 +217,12 @@ The three August 2026 mandates were:
                                │
                OPERATOR HALT (.halt, checked per call)      ✅ works
                                │
-               HOST PLUGIN (Copilot CLI hooks)              ⚠ live-verified; 20 s watchdog; no-pwsh fails open
+               HOST PLUGIN (host-delivered calls)           ⚠ protocol-tested; launch failures may fail open
 ```
 
-**Recommendation.** Finish P1, then ship. After P1, AGL can credibly claim to be *"the minimal, auditable constitutional kernel for agent tool calls"*. That niche is not occupied by the hyperscalers or by Microsoft's broader toolkit.
+**Recommendation.** Complete the explicit release and assurance gates, then
+evaluate a complementary local-first SDK/plugin offering. Do not equate P1
+completion, a score threshold or a market niche hypothesis with certification.
 
 ---
-*Executive Scorecard v3.1.0: remediation update prepared November 2, 2026 for Kirk LaSalle (baseline v3.0.0, November 1, 2026).*  
-*“Every autonomous action, observable. Every decision, traceable. Every commitment, unbreakable.”*
+*Executive Scorecard v3.2.0: verification correction, November 2, 2026.*

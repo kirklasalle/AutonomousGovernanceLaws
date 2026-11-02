@@ -42,5 +42,25 @@ The following areas are in-scope for security bug reports:
 - **Interceptor Pipeline Evasion:** Ways an LLM or sub-agent can execute actions bypassing `intercept_and_execute`.
 - **Ledger Tampering:** Methods to modify `.ledger/` without detection by `audit_ledger()`.
 - **Charter Digest Spoofing:** Collisions or bypasses of `LAW10-CHARTER` verification.
-- **Halt Signal Suppression:** Failure of `.halt` trigger to terminate agent threads within 50ms.
+- **Halt Signal Suppression:** Failure to refuse the next intercepted call while `.halt` is present. Running executors are not cancelled; there is no 50 ms termination guarantee.
 - **Elevation Privilege Escalation:** Executing elevated tools without valid cryptographic approval tokens.
+
+## Current assurance limits
+
+Version 0.1.0 is a hardened pre-alpha, not a sandbox or compliance certification.
+Trusted application code must route every relevant action through the SDK. Plugin
+prompts use host permissions, not Ed25519 approval tokens. A failed hook launch
+can bypass enforcement on legacy Copilot CLI; supported-host live validation
+remains incomplete. The ledger cannot detect tail truncation or a fully
+recomputed chain without an external checkpoint.
+
+AGL-V1 action IDs and tool names must be non-empty and contain no colon. Signing
+and verification reject ambiguous identifiers; ordinary existing tokens retain
+the same wire format. Requested DPAPI protection now refuses unavailable DPAPI
+on Windows; the explicitly marked POSIX fallback remains unencrypted. DPAPI is
+Windows-user-bound protection, not an HSM or a defense against code running as
+the same user.
+
+See [current verification](AUDIT_VERIFICATION_2026-11.md) for tested boundaries and
+the [audit](WORLD_CLASS_AUDIT_2026-11.md) for open findings. Response timelines
+above are maintainer targets, not a contracted SLA.

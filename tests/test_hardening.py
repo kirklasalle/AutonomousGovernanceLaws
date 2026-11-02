@@ -32,6 +32,7 @@ from autonomous_governance.security import (
     POSIX_FALLBACK_MARKER,
     DPAPIKeyStore,
     create_approval_token,
+    ed25519_sign,
     generate_ed25519_keypair,
     verify_approval_token,
 )
@@ -122,6 +123,56 @@ def test_token_without_embedded_key_verifies_against_pinned_key(env):
     token = sign(env, "a-5", "deploy", payload)
     token.pop("operator_pubkey")
     assert verify_approval_token(token, "deploy", payload, env["pub"]) == (True, "Valid single-use authorization")
+
+
+@pytest.mark.parametrize("original_id,original_tool,new_id,new_tool", [
+    ("request", "namespace:deploy", "request:namespace", "deploy"),
+    ("request:namespace", "deploy", "request", "namespace:deploy"),
+])
+def test_approval_fields_cannot_be_repartitioned(env, original_id, original_tool, new_id, new_tool):
+    payload = {"x": 1}
+    token = sign(env, "request", "deploy", payload)
+    # Reproduce the ambiguous message accepted by the pre-fix signer.
+    message = (
+        f"AGL-V1:{original_id}:{original_tool}:{token['payload_hash']}:"
+        f"{token['issued_at']}:{token['expires_at']}"
+    ).encode("utf-8")
+    token["signature"] = ed25519_sign(env["priv"], env["pub"], message).hex()
+    token["action_id"], token["tool_name"] = new_id, new_tool
+    ok, reason = verify_approval_token(token, new_tool, payload, env["pub"])
+    assert ok is False and "without ':'" in reason
+
+
+@pytest.mark.parametrize("action_id,tool", [("request:namespace", "deploy"), ("request", "namespace:deploy")])
+def test_signer_rejects_ambiguous_identifiers(env, action_id, tool):
+    with pytest.raises(ValueError, match="without ':'"):
+        sign(env, action_id, tool, {})
+
+
+def test_cli_approve_reports_invalid_identifier(env, monkeypatch, capsys):
+    from autonomous_governance import cli
+
+    key = env["root"] / "test.key"
+    key.write_bytes(env["priv"])
+    monkeypatch.setattr(sys, "argv", [
+        "agy-governance", "approve", "--key", str(key),
+        "--action-id", "request:namespace", "--tool", "deploy",
+    ])
+    with pytest.raises(SystemExit) as exc:
+        cli.main()
+    assert exc.value.code == 1
+    assert "Could not create approval token" in capsys.readouterr().out
+
+
+def test_windows_dpapi_unavailable_does_not_write_plaintext(tmp_path, monkeypatch):
+    import autonomous_governance.security as security
+
+    monkeypatch.setattr(security.sys, "platform", "win32")
+    monkeypatch.setattr(DPAPIKeyStore, "is_dpapi_available", staticmethod(lambda: False))
+    key_file = tmp_path / "operator.dpapi.key"
+    with pytest.raises(RuntimeError, match="DPAPI"):
+        DPAPIKeyStore.save_key(key_file, b"k" * 32, use_dpapi=True)
+    assert not key_file.exists()
 
 
 @pytest.mark.parametrize("field,value", [("issued_at", "0"), ("expires_at", 1.5), ("expires_at", True)])

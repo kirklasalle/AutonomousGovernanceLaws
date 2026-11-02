@@ -5,34 +5,29 @@
 |---|---|
 | **Prepared for** | Kirk LaSalle, Supreme Operator |
 | **Date** | 2026-11-01 |
-| **Repository revision** | `1a0f616` (charter manifest v3.2.1) |
+| **Baseline revision** | `1a0f616`; implementation rechecked from `e1b6382` plus the verification fixes below (charter manifest v3.2.1) |
 | **Companion documents** | [WORLD_CLASS_AUDIT_2026-11.md](WORLD_CLASS_AUDIT_2026-11.md) (finding IDs P1–P19), [EXECUTIVE_SUMMARY.md](EXECUTIVE_SUMMARY.md) |
 | **New tool delivered** | [scripts/install_charter.ps1](scripts/install_charter.ps1): byte-exact charter install and verification, tested |
-| **Method** | Empirical probes on this machine plus primary vendor documentation (see §9). Nothing here is extrapolated from marketing copy. |
+| **Method** | Source review, fresh tests, real wheel/sdist installs and protocol subprocess checks. [Persistent verification record](AUDIT_VERIFICATION_2026-11.md). Historical live-session claims in §4.5 are not independently re-established. |
 | **Updated** | 2026-11-02: both routes now ship. `agy-governance init` covers the charter copy, and the repository is an agent plugin, verified live in Copilot CLI (§4.5). One correction from the live trial: Copilot CLI 0.0.410 runs the tool when a hook exits non-zero, so it fails **open**, not closed as §1 and §4.2 originally stated. The shipped plugin returns a JSON deny with exit 0 instead. |
 
 ---
 
 ## 1. BOTTOM LINE
 
-1. **The two methods are layers, not alternatives.** Copying the three documents into an agent tells the model *what it should do*. Hooks and the kernel control *what it can do*. The ledger records *what it did*. A world-class install uses all three layers.
+1. **Your project-root copy is a valid instruction installation, not runtime enforcement.** Keep the three original documents together and add a host loader so the assistant knows to read them. Host loading and instruction adherence are not guaranteed.
 2. **"Copy the three documents" covers two different installs:**
    - **(A) Pasting them into an agent's instructions.** This works today in every assistant. It is **advisory only**: nothing enforces it, nothing detects drift, and nothing records it. Anthropic's own documentation says instruction files are "context, not enforced configuration" (§9 [C3]).
-   - **(B) Copying the files into a project.** This is **mandatory** for the Python SDK. The kernel refuses to boot unless all three files **and** `config/charter_manifest.json` are present and byte-identical. 9 of the 12 copy scenarios tested failed, including a plain `Get-Content | Set-Content` copy and an editor adding one trailing newline.
-3. **The project is not an agent plugin today.** `copilot plugin install D:\Projects\IntelligenceGovernanceLaws` returns *"No plugin.json found in repository."* AGL is currently a Python library with two CLIs (`agy-governance`, `laws-lint`). It is **not on PyPI** (HTTP 404), and its wheel **does not contain the charter**.
-4. **It can become one, and a prototype was built and tested.** A 10-file AGL plugin installed cleanly in GitHub Copilot CLI 0.0.410. Its `sessionStart` hook injected the SHA-256-verified charter (30,719 characters). Its `preToolUse` hook **denied** a recursive delete of the filesystem root, a drive format, a database drop, and edits to the charter manifest (exact probe strings in §4.2). A one-byte change to the charter made the hook exit non-zero. The current hooks reference documents that as **deny (fail-closed)**, but *Correction (2026-11-02, §4.5):* Copilot CLI 0.0.410 logs the error and runs the tool. These probes drove the hook scripts directly; the shipped plugin was later verified in a live session.
-5. **The prototype also exposed blockers you must fix before publishing:**
-   - The ledger hash chain breaks on every hook call (**P4**).
-   - Spacing tricks evade the classifier (**P6**).
-   - Charter paths resolve against the working directory (**P18**).
-   - The wheel ships no charter data (**P19**).
-
-   Publish the plugin only after the P0 security fixes in the audit roadmap.
+   - **(B) Copying the files into a project.** For SDK boot, provide the three documents **and** `config/charter_manifest.json`. Hash verification normalises CRLF to LF; it is not raw-byte equality. The installer copies new files byte-for-byte, preserves line-ending-equivalent existing files, and refuses conflicting files unless `--force` is explicit.
+3. **The repository now is an agent plugin.** Copilot/VS Code and Claude manifests, hook wrappers, a skill, kernel and charter ship in source. The Python wheel also includes the charter, but installing the wheel does not register a host plugin.
+4. **The methods are complementary.** Instructions communicate intent; the SDK or plugin gates routed actions. SDK approvals are signed; plugin approvals use host permission prompts. The plugin records classification decisions, not tool execution outcomes.
+5. **Do not treat the plugin as an unconditional security boundary.** Recognised prohibited operations are denied, not every possible destructive operation. Legacy Copilot CLI can run tools if the hook cannot launch. Its elevated default is deny because its host cannot ask; `defer` deliberately delegates to host permissions and may allow execution without a prompt. Fresh tests verify protocol outputs and wrappers, not complete live-host compatibility.
 
 **Recommendation for today:**
-- Keep pasting, but use the thin per-host loaders in §3.1.4.
-- Use [scripts/install_charter.ps1](scripts/install_charter.ps1) for every SDK project.
-- Treat the plugin as the flagship distribution channel for Q1 2027 (§6).
+- Use `agy-governance init --target <project-root> --loaders`, then verify the target manifest. The PowerShell installer in §3.2 is a Python-free alternative.
+- Keep operator private keys outside agent-readable storage; pin the public key for SDK approvals.
+- Test plugin deny behavior on harmless sample operations in each target host before relying on it. Do not silently enable `defer`.
+- Existing loader files are never overwritten: merge corrected Antigravity frontmatter manually if installed before this verification pass.
 
 ---
 
@@ -42,10 +37,12 @@
 |---|---|---|---|
 | **1A: Charter as instructions** (your current method) | The text of the three documents | Inside the model's context (persuasion) | ✅ Works in every host. Advisory only. |
 | **1B: Charter as runtime assets** | Byte-exact files + `config/charter_manifest.json` | On disk, verified by `GovernanceKernel` at boot | ✅ Required by the SDK. Fragile if copied by hand. |
-| **2A: Python package** | `autonomous_governance` + `agy-governance` + `laws-lint` | Inside *your own* Python agent, wrapping its tool calls | ⚠️ From source only. Not on PyPI. Useless without 1B. |
-| **2B: Agent plugin** | Manifest + hooks + skill + kernel + charter | Inside Copilot CLI / VS Code / Claude Code, on **every** tool call | 🧪 Prototype only (§4.2). Not in the repo. |
+| **2A: Python package** | `autonomous_governance` + CLIs + reference charter | Inside *your own* Python agent, wrapping routed tool calls | Source or locally built wheel; `init` installs project assets. No published release verified. |
+| **2B: Agent plugin** | Manifest + hooks + skill + kernel + charter | Calls a compatible host delivers to enabled hooks | Shipped pre-alpha; protocol/wrapper-tested. Full live-host qualification still open. |
 
-The confusion is understandable. The repository *feels* like a plugin because it has a CLI, a linter, and a charter. But a host such as Copilot or Claude only treats something as a plugin when it has a plugin manifest (`plugin.json`). This repository has none.
+The original repository was only an SDK and charter. It now contains plugin
+manifests as well. §§4.1–4.2 describe the **historical prototype**, not today's
+package contents.
 
 ---
 
@@ -275,6 +272,11 @@ Running these is roadmap item **I7**.
 
 ### 4.5 Shipped plugin and live host verification (2026-11-02)
 
+> **Evidence qualification:** the following is the earlier author's trial record.
+> Its raw live-host transcript was not available during the fresh verification.
+> Do not interpret it as a new end-to-end pass for the final wrappers. See the
+> [committed evidence](AUDIT_VERIFICATION_2026-11.md) for checks actually rerun.
+
 The plugin now lives in the repository root (roadmap I6):
 - `.plugin/plugin.json` and an identical `.github/plugin/plugin.json`
 - `.claude-plugin/plugin.json` + `marketplace.json`
@@ -321,19 +323,19 @@ It was installed with `copilot plugin install` into an **isolated** profile, so 
 
 ## 5. HEAD-TO-HEAD COMPARISON
 
-| Criterion | 1A Instructions (paste) | 1B + 2A SDK (files + package) | 2B Agent plugin (prototype) |
+| Criterion | 1A Instructions (paste) | 1B + 2A SDK (files + package) | 2B Agent plugin (shipped pre-alpha) |
 |---|---|---|---|
-| **Governs** | The model's intent and reasoning | Tool calls *your* Python agent routes through `intercept_tool_call` | **Every** tool call the host agent makes |
-| **Enforcement** | None (advisory) | In-process. Agent code can catch `GovernanceViolation` (P8). Self-approval (P1/P2) fixed in `aae4989`. | Out-of-process. `deny` is binding. Crash → deny. Host timeout → **allow**, but the hook's 20 s watchdog denies first. |
+| **Governs** | The model's intent and reasoning | Calls *your* application routes through the SDK | Calls a compatible host delivers to enabled hooks |
+| **Enforcement** | None (advisory) | In-process. Trusted callers must honor refusals (P8). | Out-of-process classification; host must honor the decision. Startup failures and host timeouts can fail open. |
 | **Charter integrity** | None: drift is invisible | SHA-256 at boot ✅ | SHA-256 on every hook call ✅ |
-| **Human approval** | Model-dependent | AGL Ed25519 token, pinned operator key only (P1/P2 fixed) | Host's native prompt; denied in autopilot/cloud ✅ |
-| **Audit trail** | None | Hash-chained ledger; resumes and locks across processes (P4/P5/P16 fixed; P17 open) | Same ledger; one chain across hook processes (verified live, §4.5) |
+| **Human approval** | Model-dependent | AGL Ed25519 token, pinned operator key only | Host permission handling, unsigned; `defer` may allow without a prompt |
+| **Audit trail** | None | Hash-chained ledger; resumes and locks across processes (P17 open) | Classification decisions, not execution outcomes; chain verified in fresh subprocess tests |
 | **Hosts** | Any LLM | Python applications | Copilot CLI, VS Code; Claude Code with second manifest |
 | **Install effort** | Seconds | Clone + pip + copy + run from root | One command (after publishing) |
 | **Context cost** | ≈ 7.6 K tokens (≈ 1.6 K with PAD only) | 0 | ≈ 7.7 K tokens with `sessionStart` injection; 0 with skill-only mode |
 | **Latency** | 0 | 0.49–0.71 ms per call (measured) | ≈ 0.3 s per tool call in direct probes; 0.72–0.76 s live on Windows via `pwsh` (§4.5) |
 | **Failure mode** | Silent truncation, demotion, injection | Refuses to boot (safe) | Fail-closed on error, oversized input, a PowerShell load failure, or a decision slower than 20 s (JSON deny on Copilot, exit 2 elsewhere). Fail-open on a disabled plugin, a hang before Python starts, or a hook that cannot start (no `pwsh` on Windows, Copilot CLI 0.0.4xx) |
-| **Maturity today** | Works | Works; pre-alpha security | Pre-alpha; in the repository; live-verified on Copilot CLI 0.0.410 (Windows) |
+| **Maturity today** | Advisory; host loading must be checked | Tested pre-alpha | Shipped pre-alpha; final-build live qualification pending |
 | **Best for** | Every conversation, every host | Products you build in Python | Governing coding agents on a developer machine |
 
 ---
@@ -362,7 +364,7 @@ flowchart LR
 ### 6.1 What to do now (no code changes needed)
 1. Keep using the three documents as instructions, but switch to the **thin loaders in §3.1.4**. This avoids Antigravity truncation and lets you edit nothing.
 2. For any project that imports `autonomous_governance`, run **`scripts\install_charter.ps1 -Target <project>`** and start the agent from that project's root.
-3. Do not distribute the 0.1.0 wheel or claim "plugin" support publicly until the items below are closed.
+3. Use locally built artifacts for evaluation. Do not publish a production-ready or universally supported-host claim before release signing and live-host qualification.
 
 ### 6.2 Roadmap to a first-class installable product
 
@@ -386,7 +388,10 @@ flowchart LR
 - I7 is partly done: Copilot CLI 0.0.410 on Windows is verified live; Linux/macOS, current Copilot CLI, Claude Code and VS Code are pending.
 - I8 is open.
 
-**Market note:** a one-command plugin that loads a **hash-verified constitution** and enforces it on every tool call is a distinctive offering in the agent-governance market ([MARKET_AUDIT.md](MARKET_AUDIT.md)). Most competitors either enforce policy without a charter (gateways, policy engines) or publish principles without enforcement. Shipping I1–I8 turns AGL's strongest asset, charter pinning, into its distribution channel.
+**Market note:** combining a pinned charter with host-delivered tool checks is a
+candidate differentiator, not demonstrated exclusivity. The
+[market audit](MARKET_AUDIT.md) recommends a complementary SDK/plugin position,
+with host qualification and signed releases before broader assurance claims.
 
 ---
 

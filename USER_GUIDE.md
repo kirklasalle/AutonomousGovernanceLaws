@@ -5,6 +5,22 @@
 **Author:** Kirk LaSalle (Founder & Supreme Operator)  
 **Co-Authors:** Antigravity AI, Intelligence Systems  
 **Framework Status:** Active, Binding, and Ratified (v3.2.1)  
+**Software Status:** v0.1.0 hardened pre-alpha; see [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md) before relying on it as a security control  
+
+---
+
+## 0. INSTALLING THE GOVERNANCE LAYER
+
+There are three ways to install. [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md) compares them in detail.
+
+| Method | Command | What you get | Enforced? |
+|---|---|---|---|
+| **Charter copy** | `agy-governance init --target <project> [--loaders]` | The three pinned charter documents and the manifest, verified byte for byte. `--loaders` adds `AGENTS.md`, `CLAUDE.md` and `.agents/rules/` so agents read the charter. | **No.** The agent is asked to follow the charter but nothing stops it. |
+| **Agent plugin** | `copilot plugin install kirklasalle/AutonomousGovernanceLaws` (or a local clone path; see [README §1b](README.md) for Claude Code) | Every tool call the agent makes is checked by the kernel before it runs. Destructive commands and changes to governance state are denied, other changes ask you first, and every decision is ledgered. | **Yes**, for the tool calls the host routes through hooks. |
+| **SDK embedding** | `GovernanceKernel(...)` in your own runtime ([`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md)) | Full control, including signed approval tokens (§3). | **Yes**, for calls your runtime routes through the kernel. |
+
+> [!WARNING]
+> **Agent plugin on Windows with GitHub Copilot CLI:** install **PowerShell 7** (`pwsh`) and run `copilot update`. Without PowerShell 7 the hooks cannot start, and Copilot CLI 0.0.4xx then runs tools **unchecked**. Copilot CLI 0.0.4xx also cannot ask for approval, so the plugin denies every shell command and file edit on those builds. Set `AGL_ELEVATED_DECISION=defer` to hand those to Copilot's own permission prompts instead.
 
 ---
 
@@ -85,8 +101,8 @@ stateDiagram-v2
         [*] --> CheckProhibited
         CheckProhibited --> Prohibited: Matches rm -rf, drop table, protected paths
         CheckProhibited --> CheckElevated: Safe from prohibitions
-        CheckElevated --> Elevated: write_file, deploy, terminal, api_mutation
-        CheckElevated --> Safe: read_only, inspect, compute, query
+        CheckElevated --> Elevated: write_file, deploy, terminal, api_mutation, unknown tools
+        CheckElevated --> Safe: read-only tools (read, list, search)
     }
 
     state Prohibited {
@@ -148,7 +164,10 @@ This generates a tamper-evident `AGL-V1` token cryptographically bound to the SH
 ```
 
 > [!NOTE]
-> **Single-Use Replay Protection:** Once used, the `action_id` is permanently marked as consumed in the kernel's memory and recorded in `.ledger/events.jsonl`. Reusing the token or modifying a single byte of the payload will cause immediate execution refusal.
+> **Single-Use Replay Protection:** Once used, the `action_id` is recorded as `APPROVAL_GRANTED` in `.ledger/events.jsonl`, and the kernel checks the ledger before accepting any token. Reusing a token, even after a restart or from another process sharing the ledger, or changing a single byte of the payload causes immediate refusal.
+
+> [!IMPORTANT]
+> Tokens are verified only against the operator public key pinned in the runtime (`operator_pubkey_path`). A runtime without a pinned key refuses **every** token, so elevated actions cannot run there. Under the agent plugin, approval happens in the host's own prompt instead of with a token.
 
 ---
 

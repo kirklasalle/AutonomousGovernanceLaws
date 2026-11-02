@@ -1,7 +1,7 @@
 # MARKET LANDSCAPE & COMPETITIVE POSITIONING AUDIT
 
-**Document Version:** 2.0.0
-**Date:** November 1, 2026
+**Document Version:** 2.1.0
+**Date:** November 2, 2026 (v2.0.0: November 1, 2026)
 **Prepared for:** Kirk LaSalle, Founder & Supreme Operator
 **Classification:** Strategic — Investor & Partner Ready (evidence-based revision)
 **Supersedes:** v1.0.0 (August 30, 2026); retained in git history
@@ -20,6 +20,11 @@
 >   - "90% EU AI Act / 100% NIST alignment" (no article-level evidence).
 >   - "Merkle ledger" and "post-quantum preparedness" (not implemented).
 >   - "Only runtime-enforced constitutional framework" (false since Microsoft's Agent Governance Toolkit).
+>
+> **What changed in v2.1.0 (November 2, 2026).** These are AGL-side updates only; competitor rows are unchanged and were not re-verified.
+> - The disqualifying defect is fixed: an agent can no longer approve its own elevated actions (P1/P2). Ledger continuity and locking are fixed (P4/P5), and the classifier is hardened (P6).
+> - AGL now ships an **agent plugin** that enforces the kernel on a coding agent's own tool calls, verified live in GitHub Copilot CLI. It also ships `agy-governance init`.
+> - Engineering score: **39 → 58.5/100** (self-assessed; [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md) §1a). §1, §4.1, §4.2, §5, §6 and §7 are updated to match.
 
 ---
 
@@ -46,14 +51,14 @@
 
 The OWASP **Top 10 for Agentic Applications 2026** has become the de facto risk checklist [R8]. **MCP 2026-07-28** is the current agent-tool protocol [R14].
 
-**AGL's position (November 2026).** AGL is a **pre-alpha, single-maintainer, Apache-2.0 Python library** (0.1.0, not yet on PyPI). It occupies a narrow but real niche: a **local-first "constitutional kernel"** that pins its governing charter by SHA-256 and gates elevated agent actions behind **payload-bound, single-use Ed25519 operator approvals**. These two ideas are genuinely uncommon in the market.
+**AGL's position (November 2, 2026).** AGL is a **hardened pre-alpha, single-maintainer, Apache-2.0 Python library** (0.1.0, not yet on PyPI). It occupies a narrow but real niche: a **local-first "constitutional kernel"** that pins its governing charter by SHA-256 and gates elevated agent actions behind **payload-bound, single-use Ed25519 operator approvals**. These two ideas are genuinely uncommon in the market. The kernel can also now be installed as an **agent plugin**, so it governs a coding assistant's own tool calls (Copilot CLI verified live; Claude Code and VS Code manifests not yet tried live).
 
-However, the November 2026 engineering audit found that, **in the default configuration, an agent can approve its own elevated actions**, and that the hash-chained ledger breaks across restarts and under concurrency. The composite engineering score is **39/100**; see [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md).
+The November 1 engineering audit found that, **in the default configuration, an agent could approve its own elevated actions**, and that the hash-chained ledger broke across restarts and under concurrency. Both are now fixed, with regression tests. The composite engineering score has moved from **39/100 to 58.5/100**; see [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md) §1a.
 
-AGL therefore **cannot yet be credibly positioned against commercial or hyperscaler offerings**. It *can* be positioned, after P0 remediation, as an embeddable policy-and-evidence component.
+AGL **still cannot be credibly positioned against commercial or hyperscaler offerings**: it is not on PyPI, has no policy-as-code or regulatory mapping, and has one maintainer. With P0 complete, it *can* now be positioned as an embeddable policy-and-evidence component, and as a charter-enforcing plugin for coding agents.
 
 **Window.** The EU high-risk delay gives roughly **13 months** (to Dec 2027) to:
-1. fix the critical defects;
+1. ~~fix the critical defects~~ (done 2026-11-01/02);
 2. publish to PyPI;
 3. ship an OWASP ASI mapping and an Art. 12/14 evidence exporter.
 
@@ -115,11 +120,11 @@ AGL is a component. It **cannot make a system compliant**, and no alignment perc
 
 ### 4.1 Capability matrix
 
-Legend: ✅ native · ◐ partial / conditional · ❌ absent. Competitor columns are taken from public vendor documentation and were not independently tested. AGL columns reflect measured behaviour at revision `1a0f616`.
+Legend: ✅ native · ◐ partial / conditional · ❌ absent. Competitor columns are taken from public vendor documentation and were not independently tested. The AGL row reflects measured behaviour after the P0 remediation (2026-11-02); the baseline at revision `1a0f616` is in the note below the table.
 
 | Offering | Model | Pre-exec tool-call intercept | Signed single-use human approval | Tamper-evident log | Kill switch | Policy-as-code | Regulatory mapping | Agent identity | Distribution |
 |---|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|---|
-| **AGL 0.1.0** | OSS, Apache-2.0 | ◐ evadable | ◐ **bypassable by default** | ◐ hash chain, resets per boot | ◐ `.halt`, next call | ❌ | ❌ | ❌ | GitHub source |
+| **AGL 0.1.0** (post-P0) | OSS, Apache-2.0 | ◐ hardened pattern matcher; also enforced in coding agents via plugin hooks | ✅ SDK, pinned key only (plugin: host prompt, unsigned) | ◐ hash chain, resumes and locked; no signed checkpoints | ◐ `.halt`, next call | ❌ | ❌ | ❌ | GitHub source; `init`; agent plugin |
 | **Microsoft Agent Governance Toolkit** [C4] | OSS, MIT, Public Preview | ✅ | ◐ | ✅ | ◐ | ✅ | ◐ (OWASP ASI: 7 full / 3 partial, self-reported) | ✅ | PyPI / npm / NuGet |
 | Microsoft Agent 365 + Entra Agent ID [C7] | Commercial, GA May 2026 | ✅ | ◐ | ✅ | ◐ | ✅ | ◐ | ✅ | SaaS |
 | AWS Bedrock AgentCore Policy [C8] | Commercial (Cedar OSS) | ✅ | ◐ | ✅ | ◐ | ✅ Cedar | ◐ | ✅ | Cloud |
@@ -130,15 +135,17 @@ Legend: ✅ native · ◐ partial / conditional · ❌ absent. Competitor column
 | Zenity [C10] | Commercial | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ | SaaS |
 | Credo AI · Holistic AI · IBM watsonx.governance · OneTrust · ServiceNow | Commercial GRC | ◐ | ◐ | ✅ | ❌ | ◐ | ✅ | ◐ | SaaS |
 
+*AGL baseline at `1a0f616` (v2.0.0 of this audit):* intercept ◐ evadable · approval ◐ **bypassable by default** · log ◐ resets per boot · distribution GitHub source only.
+
 ### 4.2 Closest comparator: Microsoft Agent Governance Toolkit
 
-| Dimension | AGL 0.1.0 | Microsoft AGT (Public Preview) |
+| Dimension | AGL 0.1.0 (post-P0) | Microsoft AGT (Public Preview) |
 |---|---|---|
 | Licence | Apache-2.0 | MIT |
-| Languages / distribution | Python, source only | Multi-language; PyPI, npm, NuGet |
-| Scope | Charter integrity, 3-tier gate, signed approvals, hash-chained ledger, halt, linter, badge | Policy enforcement, identity, sandboxing, SRE |
+| Languages / distribution | Python; source, `agy-governance init`, agent plugin (Copilot CLI, Claude Code, VS Code manifests) | Multi-language; PyPI, npm, NuGet |
+| Scope | Charter integrity, 3-tier gate, signed approvals, hash-chained ledger, halt, linter, badge, coding-agent hooks | Policy enforcement, identity, sandboxing, SRE |
 | Distinctive feature | **SHA-256-pinned constitutional charter**; **payload-bound single-use Ed25519 approvals** | Breadth, identity integration, OWASP ASI mapping, OpenSSF badges |
-| Maturity signals | 22 tests, 52% coverage, CI; critical defects open | OpenSSF Scorecard + Best Practices badges |
+| Maturity signals | 204 tests on Windows and Linux, 79% coverage, CI; P0 defects fixed; P17 open; plugin verified live in one host | OpenSSF Scorecard + Best Practices badges |
 
 **Implication.** Competing head-on with AGT on breadth is not viable. AGL's credible play is depth on the two distinctive features, plus interoperability, potentially including an adapter that lets AGL's charter-pinning and signed-approval primitives run *inside* AGT- or MCP-gateway-based deployments.
 
@@ -165,18 +172,19 @@ Standalone guardrail vendors are being absorbed into security and vertical platf
 ### 5.1 Genuine differentiators (verified in code)
 
 1. **Content-addressed constitutional charter.** Three governing documents are pinned by LF-normalised SHA-256 in [`config/charter_manifest.json`](config/charter_manifest.json) and verified at kernel boot and in CI. None of the surveyed vendors markets this.
-2. **Payload-bound, expiring, single-use Ed25519 approvals (AGL-V1).** The signature covers the tool name and a canonical payload digest, so what the operator signs is exactly what executes. This mitigates OWASP ASI09 (human-agent trust exploitation). It is correct **when an operator public key is pinned**.
-3. **Zero runtime dependencies, offline, ~1.7k LOC.** It is auditable in an afternoon and suits air-gapped and sovereign deployments.
-4. **Sub-millisecond overhead.** Measured at 0.49 ms (SAFE) and 0.71 ms (signed ELEVATED).
+2. **Payload-bound, expiring, single-use Ed25519 approvals (AGL-V1).** The signature covers the tool name and a canonical payload digest, so what the operator signs is exactly what executes. This mitigates OWASP ASI09 (human-agent trust exploitation). Tokens verify only against a pinned operator key; without one, every elevated action is refused (fixed 2026-11-01, P1/P2).
+3. **Zero runtime dependencies, offline, small.** The kernel is about 1.2k lines (`kernel.py`) and the whole package about 3.3k, including comments (measured 2026-11-02). It is auditable in a day and suits air-gapped and sovereign deployments.
+4. **Sub-millisecond kernel overhead.** Measured at 0.49 ms (SAFE) and 0.71 ms (signed ELEVATED) before the ledger lock was added; not yet re-benchmarked. Through the agent plugin, each host tool call costs about 0.75 s on Windows, mostly Python start-up.
+5. **The same pinned charter governs coding agents (new).** The agent plugin runs the kernel in the host's pre-tool hook. It denies destructive commands and edits to governance state, asks before other changes, and ledgers every decision. Hook-based interception is itself a standard host feature, so the distinctive part is the pinned charter and the shared ledger, not the hook.
 
 ### 5.2 Claims that are not differentiators (or not true)
 
 | Claim (v1.0.0) | Reality |
 |---|---|
-| "Merkle ledger" | Linear SHA-256 hash chain. Resets per boot, not concurrency-safe, and cannot detect tail truncation. |
+| "Merkle ledger" | Linear SHA-256 hash chain. Since 2026-11-01 it resumes across restarts and is locked across processes, but it still cannot detect tail truncation (P17). |
 | "Only runtime-enforced constitutional framework" | Runtime enforcement is standard (Microsoft AGT, AgentCore, NeMo, Docker MCP Gateway). Only the *pinned charter* is distinctive. |
 | "Post-quantum preparedness" | No ML-DSA and no algorithm-agility layer yet. |
-| "Hardware-tied security" | Windows DPAPI only, and it fails open on decryption error. No HSM or PKCS#11. |
+| "Hardware-tied security" | Windows DPAPI only. It now fails closed on decryption error (P15 fixed), but there is no HSM or PKCS#11, and keys off Windows are unencrypted at rest. |
 | "100/100 compliance" badge | Self-assessed by a linter that exempts the kernel and the tests. |
 
 ### 5.3 OWASP Agentic Top 10 (2026) mapping: honest self-assessment
@@ -184,7 +192,7 @@ Standalone guardrail vendors are being absorbed into security and vertical platf
 | ASI | Risk | AGL today |
 |---|---|---|
 | ASI01 | Agent Goal Hijack | ❌ (no input provenance) |
-| ASI02 | Tool Misuse & Exploitation | ◐ 3-tier gate; evadable (P6) |
+| ASI02 | Tool Misuse & Exploitation | ◐ 3-tier gate, hardened (P6 mitigated); also enforced on coding-agent tools via the plugin |
 | ASI03 | Identity & Privilege Abuse | ◐ operator key only; no agent identity |
 | ASI04 | Agentic Supply Chain | ◐ charter pinning; zero deps; no MCP-server pinning |
 | ASI05 | Unexpected Code Execution | ◐ prohibited-command list; no sandbox |
@@ -192,7 +200,7 @@ Standalone guardrail vendors are being absorbed into security and vertical platf
 | ASI07 | Insecure Inter-Agent Communication | ❌ (CAC tokens documented, not built) |
 | ASI08 | Cascading Failures | ◐ global `.halt` |
 | ASI09 | Human-Agent Trust Exploitation | ◐ payload-bound approvals; no action preview |
-| ASI10 | Rogue Agents | ◐ halt + ledger; ledger gaps |
+| ASI10 | Rogue Agents | ◐ halt + ledger; no signed checkpoints (P17) |
 | | **Total** | **0 full · 7 partial · 3 none** |
 
 ---
@@ -201,7 +209,7 @@ Standalone guardrail vendors are being absorbed into security and vertical platf
 
 | **Strengths** | **Weaknesses** |
 |---|---|
-| • SHA-256-pinned constitutional charter verified at boot<br>• Payload-bound single-use Ed25519 approvals<br>• Zero dependencies; sub-ms overhead<br>• Apache-2.0, CI, 22 tests, CLI, linter, badge<br>• Candid gap-disclosure culture in GOVERNANCE/PRD | • **Default-config self-approval bypass (P1/P2)**<br>• Ledger: per-boot reset, no locking, no anchoring<br>• Substring classifier, default-allow for unknown tools<br>• 52% coverage; CLI untested<br>• Not on PyPI; bus factor 1<br>• History of documentation over-claims |
+| • SHA-256-pinned constitutional charter verified at boot<br>• Payload-bound single-use Ed25519 approvals, pinned key only<br>• Zero dependencies; sub-ms kernel overhead<br>• Apache-2.0, CI, 204 tests on two OSes, CLI, `init`, linter, badge<br>• Agent plugin verified live in Copilot CLI<br>• Candid gap-disclosure culture in GOVERNANCE/PRD | • Ledger has no signed checkpoints or anchoring (P17)<br>• Classifier is hardened but still pattern-based; no sandbox<br>• 79% coverage; CLI 39%<br>• Plugin: fails open if the hook cannot start (no `pwsh`, Copilot CLI 0.0.4xx); about 0.75 s per call; Claude Code / VS Code untested live<br>• Not on PyPI; bus factor 1<br>• History of documentation over-claims |
 | **Opportunities** | **Threats** |
 | • EU high-risk deadline moved to Dec 2027: time to mature<br>• OWASP ASI becoming a procurement checklist<br>• MCP 2026-07-28 stateless model suits per-request policy middleware<br>• Sovereign / air-gapped / regulated buyers who will not adopt hyperscaler control planes<br>• Singapore agentic framework closely matches AGL's concepts | • Free bundled controls from Microsoft, AWS, and Google<br>• Microsoft AGT (MIT, multi-language) occupies the same OSS niche<br>• Market consolidation reduces independent buyers<br>• Reputational risk if security claims outpace code |
 
@@ -212,13 +220,13 @@ Standalone guardrail vendors are being absorbed into security and vertical platf
 **Positioning statement (recommended):**
 > *"Autonomous Governance Laws is the minimal, auditable constitutional kernel for AI-agent tool calls: a pinned charter, approvals the agent cannot forge, and an evidence-grade action ledger, in a zero-dependency library you can read in an afternoon."*
 
-The statement is only usable once P0 below is complete.
+The statement became usable once P0 was complete (2026-11-01/02), qualified by the limits in §6.
 
 | Priority | Action | Why it moves market position |
 |---|---|---|
-| **P0 (now)** | Fix P1/P2 (fail closed without pinned key), P4/P5 (ledger continuity and locking), P6 (default-deny classifier); publish a security advisory | Removes the disqualifying defect; turns a liability into a credibility signal |
-| **P1** | Evidence-grade ledger (payload/approval binding, signed checkpoints); coverage ≥ 85%; SAST; OpenSSF Scorecard | Makes the "tamper-evident" claim defensible to auditors |
-| **P2** | PyPI 0.2.0 via Trusted Publishing with Sigstore attestations and SBOM | Removes the #1 adoption barrier |
+| **P0 (done)** | ~~Fix P1/P2 (fail closed without pinned key), P4/P5 (ledger continuity and locking), P6 (default-deny classifier)~~ done; still to do: publish a security advisory | Removes the disqualifying defect; turns a liability into a credibility signal |
+| **P1** | Evidence-grade ledger (payload/approval binding done; signed checkpoints open); coverage ≥ 85%; SAST; OpenSSF Scorecard; live plugin trials in Claude Code and VS Code | Makes the "tamper-evident" claim defensible to auditors |
+| **P2** | PyPI 0.2.0 via Trusted Publishing with Sigstore attestations and SBOM; list the plugin in the Copilot and Claude Code plugin marketplaces | Removes the #1 adoption barrier |
 | **P3** | **OWASP ASI mapping doc**; **EU AI Act Art. 12/14 evidence exporter**; **MCP 2026-07-28 middleware**; adapters for LangGraph, OpenAI Agents SDK, and Microsoft Agent Framework / AGT; optional OPA/Cedar backend | Positions AGL as a complement to gateways and platforms rather than a competitor |
 | **P4** | Algorithm agility + hybrid Ed25519/ML-DSA; M-of-N operator quorum; PKCS#11/HSM; external ledger anchoring | Assurance tier for regulated and sovereign buyers |
 

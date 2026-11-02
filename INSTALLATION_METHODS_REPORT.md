@@ -9,6 +9,7 @@
 | **Companion documents** | [WORLD_CLASS_AUDIT_2026-11.md](WORLD_CLASS_AUDIT_2026-11.md) (finding IDs P1–P19), [EXECUTIVE_SUMMARY.md](EXECUTIVE_SUMMARY.md) |
 | **New tool delivered** | [scripts/install_charter.ps1](scripts/install_charter.ps1): byte-exact charter install and verification, tested |
 | **Method** | Empirical probes on this machine plus primary vendor documentation (see §9). Nothing here is extrapolated from marketing copy. |
+| **Updated** | 2026-11-02: both routes now ship. `agy-governance init` covers the charter copy, and the repository is an agent plugin, verified live in Copilot CLI (§4.5). One correction from the live trial: Copilot CLI 0.0.410 runs the tool when a hook exits non-zero, so it fails **open**, not closed as §1 and §4.2 originally stated. The shipped plugin returns a JSON deny with exit 0 instead. |
 
 ---
 
@@ -19,7 +20,7 @@
    - **(A) Pasting them into an agent's instructions.** This works today in every assistant. It is **advisory only**: nothing enforces it, nothing detects drift, and nothing records it. Anthropic's own documentation says instruction files are "context, not enforced configuration" (§9 [C3]).
    - **(B) Copying the files into a project.** This is **mandatory** for the Python SDK. The kernel refuses to boot unless all three files **and** `config/charter_manifest.json` are present and byte-identical. 9 of the 12 copy scenarios tested failed, including a plain `Get-Content | Set-Content` copy and an editor adding one trailing newline.
 3. **The project is not an agent plugin today.** `copilot plugin install D:\Projects\IntelligenceGovernanceLaws` returns *"No plugin.json found in repository."* AGL is currently a Python library with two CLIs (`agy-governance`, `laws-lint`). It is **not on PyPI** (HTTP 404), and its wheel **does not contain the charter**.
-4. **It can become one, and a prototype was built and tested.** A 10-file AGL plugin installed cleanly in GitHub Copilot CLI 0.0.410. Its `sessionStart` hook injected the SHA-256-verified charter (30,719 characters). Its `preToolUse` hook **denied** a recursive delete of the filesystem root, a drive format, a database drop, and edits to the charter manifest (exact probe strings in §4.2). A one-byte change to the charter made the hook exit non-zero, which Copilot treats as **deny (fail-closed)**.
+4. **It can become one, and a prototype was built and tested.** A 10-file AGL plugin installed cleanly in GitHub Copilot CLI 0.0.410. Its `sessionStart` hook injected the SHA-256-verified charter (30,719 characters). Its `preToolUse` hook **denied** a recursive delete of the filesystem root, a drive format, a database drop, and edits to the charter manifest (exact probe strings in §4.2). A one-byte change to the charter made the hook exit non-zero. The current hooks reference documents that as **deny (fail-closed)**, but *Correction (2026-11-02, §4.5):* Copilot CLI 0.0.410 logs the error and runs the tool. These probes drove the hook scripts directly; the shipped plugin was later verified in a live session.
 5. **The prototype also exposed blockers you must fix before publishing:**
    - The ledger hash chain breaks on every hook call (**P4**).
    - Spacing tricks evade the classifier (**P6**).
@@ -231,7 +232,7 @@ The policy is default-ask, which closes the default-allow gap of **P6** for unkn
 | `preToolUse`: `powershell Remove-Item x`, `create src/app.py` | ✅ **ask** |
 | `preToolUse`: `view README.md` | ✅ no decision (allowed) |
 | `preToolUse`: evasions **E1–E2** (strings below) | ⚠️ **ask, not deny**. Classifier evasion (**P6**). Still blocked unless a human approves. |
-| One space appended to the Covenant | ✅ both hooks exit 1 (`expected 180625f4…, got c55996ab…`). Copilot command `preToolUse` hooks are **fail-closed** on non-zero exit [C2]. |
+| One space appended to the Covenant | ✅ both hooks exit 1 (`expected 180625f4…, got c55996ab…`). The hooks reference documents command `preToolUse` hooks as **fail-closed** on non-zero exit [C2]. ❌ *Correction (§4.5):* Copilot CLI 0.0.410 runs the tool after a non-zero exit. |
 | Ledger after 11 hook processes | ❌ `audit_ledger()` → `valid: False`, **11 broken links**. Every process restarts the chain at 64 zeros (**P4**). |
 | Hook latency | 283–518 ms per tool call (Python cold start + kernel boot + 3 × SHA-256). The timeout was set to 10 s. |
 
@@ -245,8 +246,8 @@ E1  bash        rm  -rf  /                          (double spaces)
 E2  powershell  Remove-Item -Recurse -Force C:\
 ```
 
-**Not yet verified:**
-- A live agent session with the hooks firing. The install output reports skills only, and a live run would spend premium requests in your real profile.
+**Not yet verified (at the prototype stage):**
+- A live agent session with the hooks firing. The install output reports skills only, and a live run would spend premium requests in your real profile. *Done for Copilot CLI on 2026-11-02 in an isolated profile (§4.5).*
 - The Claude Code install, which needs `.claude-plugin/plugin.json` plus a marketplace.
 - The VS Code pickup.
 
@@ -266,11 +267,55 @@ Running these is roadmap item **I7**.
 1. **Fix the ledger before shipping hooks (P4/P5).** Hooks are short-lived processes, so chain resume and file locking are mandatory.
 2. **Bundle the charter with the code (P19), and resolve paths from the manifest (P18).** The prototype had to `chdir` into its charter folder to boot the kernel.
 3. **Map host tool names.** The kernel's classifier only knows its own names (`write_file`, `execute_command`, …) and only reads the `command` and `target_path` arguments. Copilot sends `powershell`/`bash`/`edit`/`create` with a `path` argument, and Claude sends `Bash`/`Write`/`Edit` with `file_path`. Without a mapping layer, any host call that misses the substring checks is classified **SAFE**, and protected-path checks never see the file being edited (**P6**). The prototype adds this mapping.
-4. **Timeouts fail open** for command hooks, and HTTP hooks fail open entirely [C2]. Keep hooks fast: cache the verified charter hash per session in `$COPILOT_PLUGIN_DATA` and avoid network calls.
+4. **Timeouts fail open** for command hooks, and HTTP hooks fail open entirely [C2]. Keep hooks fast: cache the verified charter hash per session in `$COPILOT_PLUGIN_DATA` and avoid network calls. *Shipped:* the hook caps input size (1 MiB events, 256 KiB of inspected text, 512 write paths) and its own 20 s watchdog denies before the host's 30 s timeout once Python is running. The Claude Code hook also sets `"onFailure": "block"`.
 5. **Emit exactly one JSON object on stdout.** Extra output makes Copilot ignore the decision and fall back to the default flow [C2].
 6. **Protect the plugin's own install directory.** An agent with shell access could edit the installed hook script. Add the plugin cache path to `PROTECTED_PATHS` and to the deny list.
 7. **The hooks need a Python interpreter on PATH.** Prefer `exec`/`args` with an explicit interpreter (Copilot CLI only [C2]), or ship a self-contained executable.
 8. **Plugins run code on the user's machine** [C4]. Sign releases, keep the hook code small and auditable, and document exactly what it reads and writes.
+
+### 4.5 Shipped plugin and live host verification (2026-11-02)
+
+The plugin now lives in the repository root (roadmap I6):
+- `.plugin/plugin.json` and an identical `.github/plugin/plugin.json`
+- `.claude-plugin/plugin.json` + `marketplace.json`
+- `hooks/` (adapter shim, `sh` and `ps1` wrappers, one hook file per host)
+- `skills/agl-charter/`
+- the kernel's `autonomous_governance.hooks` adapter
+
+It was installed with `copilot plugin install` into an **isolated** profile, so the real `~/.copilot` stayed untouched. `USERPROFILE` and `HOME` were redirected for the process, because `plugin install` ignores `COPILOT_HOME` and `--config-dir`. It was then driven by a real agent session.
+
+**First live run: the hooks never fired.** The skill loaded, but no hook ran. Reading the CLI 0.0.410 bundle [C8] showed four incompatibilities with the current documentation [C1][C2]:
+
+| CLI 0.0.410 behaviour [C8] | Consequence | Shipped fix |
+|---|---|---|
+| Reads the manifest only from `.github/plugin/plugin.json` or a root `plugin.json` | `.plugin/plugin.json` was invisible | Identical `.github/plugin/plugin.json`. No root `plugin.json`, because newer hosts read it first as an Agent Plugins manifest. |
+| Accepts only camelCase events and the `bash`/`powershell` keys; unknown keys are stripped silently | PascalCase events and per-OS keys were dropped | `hooks/copilot-hooks.json` uses `sessionStart`/`preToolUse` with only `bash` and `powershell` |
+| Any hook error (non-zero exit, timeout, spawn failure, unparsable stdout) is logged and **the tool runs** | Exit 2 failed *open* | A camelCase `preToolUse` argument selects Copilot's protocol: every denial **and every internal error** is a single JSON deny with exit 0. The wrappers and shim do the same when Python is missing or the kernel cannot load. |
+| `"ask"` is ignored and the tool runs; the payload has no `sessionId` | Elevated actions ran unprompted | When the camelCase payload has no `sessionId` (0.0.4xx), ask becomes **deny**, with a reason that suggests `copilot update` or `AGL_ELEVATED_DECISION=defer` |
+| Hooks run through `pwsh.exe` on Windows (`bash.exe` if only a `bash` command is given, which is often WSL) | Without PowerShell 7 no hook can start, so tool calls run **ungoverned** | Both keys are always set. PowerShell 7 is a documented requirement. If PowerShell starts but cannot run the wrapper (execution policy, missing file), the `powershell` command prints a JSON deny itself (added after the code review). |
+| `sessionStart` output is ignored | No charter injection on 0.0.4xx | Documented. The skill still loads, and enforcement does not depend on context. |
+
+**Second live run** (Windows, Copilot CLI 0.0.410, portable PowerShell 7.6.9, Python 3.15.2, model `claude-haiku-4.5`, 1 premium request):
+
+| Step requested of the agent | Hook decision (from the CLI transcript) | Ledger |
+|---|---|---|
+| session start | hook ran (output ignored by 0.0.410) | `HOOK_SESSION_START` |
+| `view README.md` | allowed | `HOOK_DECISION` SAFE / none |
+| `create hello.txt` | **Denied by preToolUse hook: AGL RISK-001** … "This Copilot CLI version cannot ask for approval…" | ELEVATED / deny `0fed5ff87a4e` |
+| `create ~/.agl/plugin-data/notes.txt` | **Denied: AGL LAW1-PROHIBIT / LAW3-SUBORDINATE** | PROHIBITED / deny `480a553eb6a5` |
+| shell `git status` | **Denied: AGL RISK-001** (legacy host) | ELEVATED / deny `acb0dedbf840` |
+
+- Neither file was created.
+- The CLI log shows `Loaded 2 hook(s) from 1 plugin(s)`.
+- The 11-event ledger passed `audit_ledger()` (valid, 0 broken links). Each denial shown to the agent cites its ledger event hash.
+- Measured hook latency: **0.72–0.76 s per tool call** and 1.19 s at session start (`pwsh` start + interpreter probe + kernel boot).
+
+**Still to do (I7):**
+- Re-run the live session with the code-review fixes. The new `powershell` command was run directly, the way the CLI runs it, under PowerShell 7.6.9 and Windows PowerShell 5.1: it denied with a normal policy, a `Restricted` policy, and a missing wrapper.
+- Linux and macOS live runs (the `bash` path is covered by the test suite on Linux).
+- A current Copilot CLI release (ask prompts, `sessionStart` context).
+- Claude Code: its CLI crashes on startup under Node 26 on this machine, so it could not be tested.
+- VS Code.
 
 ---
 
@@ -279,16 +324,16 @@ Running these is roadmap item **I7**.
 | Criterion | 1A Instructions (paste) | 1B + 2A SDK (files + package) | 2B Agent plugin (prototype) |
 |---|---|---|---|
 | **Governs** | The model's intent and reasoning | Tool calls *your* Python agent routes through `intercept_tool_call` | **Every** tool call the host agent makes |
-| **Enforcement** | None (advisory) | In-process. Agent code can catch `GovernanceViolation` (P8). P1/P2 allow self-approval today. | Out-of-process. `deny` is binding. Crash → deny. Timeout → **allow**. |
+| **Enforcement** | None (advisory) | In-process. Agent code can catch `GovernanceViolation` (P8). Self-approval (P1/P2) fixed in `aae4989`. | Out-of-process. `deny` is binding. Crash → deny. Host timeout → **allow**, but the hook's 20 s watchdog denies first. |
 | **Charter integrity** | None: drift is invisible | SHA-256 at boot ✅ | SHA-256 on every hook call ✅ |
-| **Human approval** | Model-dependent | AGL Ed25519 token (weak until P1/P2 fixed) | Host's native prompt; denied in autopilot/cloud ✅ |
-| **Audit trail** | None | Hash-chained ledger (P4/P5/P16/P17 caveats) | Same ledger; **broken across processes until P4 fixed** |
+| **Human approval** | Model-dependent | AGL Ed25519 token, pinned operator key only (P1/P2 fixed) | Host's native prompt; denied in autopilot/cloud ✅ |
+| **Audit trail** | None | Hash-chained ledger; resumes and locks across processes (P4/P5/P16 fixed; P17 open) | Same ledger; one chain across hook processes (verified live, §4.5) |
 | **Hosts** | Any LLM | Python applications | Copilot CLI, VS Code; Claude Code with second manifest |
 | **Install effort** | Seconds | Clone + pip + copy + run from root | One command (after publishing) |
 | **Context cost** | ≈ 7.6 K tokens (≈ 1.6 K with PAD only) | 0 | ≈ 7.7 K tokens with `sessionStart` injection; 0 with skill-only mode |
-| **Latency** | 0 | 0.49–0.71 ms per call (measured) | ≈ 0.3 s per tool call (measured) |
-| **Failure mode** | Silent truncation, demotion, injection | Refuses to boot (safe) | Fail-closed on error; fail-open on timeout or disabled plugin |
-| **Maturity today** | Works | Works; pre-alpha security | Prototype; not in repository |
+| **Latency** | 0 | 0.49–0.71 ms per call (measured) | ≈ 0.3 s per tool call in direct probes; 0.72–0.76 s live on Windows via `pwsh` (§4.5) |
+| **Failure mode** | Silent truncation, demotion, injection | Refuses to boot (safe) | Fail-closed on error, oversized input, a PowerShell load failure, or a decision slower than 20 s (JSON deny on Copilot, exit 2 elsewhere). Fail-open on a disabled plugin, a hang before Python starts, or a hook that cannot start (no `pwsh` on Windows, Copilot CLI 0.0.4xx) |
+| **Maturity today** | Works | Works; pre-alpha security | Pre-alpha; in the repository; live-verified on Copilot CLI 0.0.410 (Windows) |
 | **Best for** | Every conversation, every host | Products you build in Python | Governing coding agents on a developer machine |
 
 ---
@@ -332,6 +377,15 @@ flowchart LR
 | I7 | Live end-to-end tests in Copilot CLI, VS Code, and Claude Code. CI replays recorded hook payloads. | New | P1 |
 | I8 | Publish: PyPI via Trusted Publishing + Sigstore attestations; plugin marketplace listing | R7 | P2 |
 
+**Status on 2026-11-02:**
+- I1 is done in `ec61164` (package data).
+- I3 and I4 are done in `aae4989`; I4's host tool-name mapping ships with the plugin.
+- I2 is partly done: P18 is fixed in `aae4989`, but P9 (default ledger/halt paths depend on the working directory) is still open.
+- I5 is done as `agy-governance init --loaders`.
+- I6 is done, with the manifest layout corrected per §4.5.
+- I7 is partly done: Copilot CLI 0.0.410 on Windows is verified live; Linux/macOS, current Copilot CLI, Claude Code and VS Code are pending.
+- I8 is open.
+
 **Market note:** a one-command plugin that loads a **hash-verified constitution** and enforces it on every tool call is a distinctive offering in the agent-governance market ([MARKET_AUDIT.md](MARKET_AUDIT.md)). Most competitors either enforce policy without a charter (gateways, policy engines) or publish principles without enforcement. Shipping I1–I8 turns AGL's strongest asset, charter pinning, into its distribution channel.
 
 ---
@@ -356,7 +410,9 @@ The prototype also confirmed **P4** (11/11 broken links across hook processes) a
 
   Raw results were saved as session evidence (`install_probe_results.json`, `plugin_probe_results.json`). The prototype source was kept with them and was **not committed**.
 - **Isolation incident:** Copilot CLI 0.0.410 did **not** honour a temporary `COPILOT_HOME`. The prototype was therefore installed into the real `~/.copilot` for about one minute. It was removed with `copilot plugin uninstall` and the empty `_direct` folder was deleted. The only residue is `~/.copilot/config.json` containing `"installed_plugins": []`.
-- **Not tested:** model adherence to pasted instructions (vendor documentation cited instead), Antigravity hooks (no primary documentation found), Claude Code plugin installation, and live hook firing in a real agent session.
+  - On 2026-11-02 the same happened once more with the shipped plugin, because `--config-dir` is also ignored by `plugin install`. It was uninstalled the same way.
+  - All later runs redirected `USERPROFILE`/`HOME` to a temporary profile, and the real profile was re-checked after each run.
+- **Not tested:** model adherence to pasted instructions (vendor documentation cited instead), Antigravity hooks (no primary documentation found), Claude Code plugin installation, VS Code pickup, and live hook firing on Linux/macOS or a current Copilot CLI release.
 - **No charter file or `config/charter_manifest.json` was modified.** `scripts/verify_charter.py` passes.
 
 ---
@@ -370,3 +426,4 @@ The prototype also confirmed **P4** (11/11 broken links across hook processes) a
 - **[C5]** Google Antigravity: *Rules*. https://antigravity.google/docs/rules
 - **[C6]** Agent Plugins manifest specification (referenced by [C4]). https://agent-plugins.org/plugin-authors/manifest
 - **[C7]** PyPI project URL (404 on retrieval). https://pypi.org/project/autonomous-governance-laws/
+- **[C8]** GitHub Copilot CLI 0.0.410 (`win32-x64`) bundle, `index.js`, inspected locally on 2026-11-02. Covers the plugin manifest lookup, the hook config schema, the hook runner (`pwsh.exe`/`bash`, stdin payload, whole-stdout JSON parse), and `preToolUse` handling (only `permissionDecision: "deny"` blocks; errors are logged and the tool runs). Primary evidence for an installed build. Newer releases follow [C1][C2].

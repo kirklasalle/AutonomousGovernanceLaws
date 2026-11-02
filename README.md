@@ -12,7 +12,7 @@
   <a href="pyproject.toml"><img src="https://img.shields.io/badge/Python%20SDK-v0.1.0%20Pre--Alpha-orange?style=for-the-badge&logo=python" alt="Python SDK" /></a>
   <a href="tests/"><img src="https://img.shields.io/badge/CI%20Invariants-22%2F22%20Passing-success?style=for-the-badge&logo=githubactions" alt="CI Invariants" /></a>
   <a href="src/autonomous_governance/linter.py"><img src="https://img.shields.io/badge/laws--lint-100%2F100%20Compliant-14b8a6?style=for-the-badge" alt="Constitutional Linter" /></a>
-  <a href="WORLD_CLASS_AUDIT_2026-11.md"><img src="https://img.shields.io/badge/Engineering%20Audit%20(Nov%202026)-39%2F100%20Pre--Alpha-purple?style=for-the-badge" alt="Engineering Audit November 2026: 39/100" /></a>
+  <a href="WORLD_CLASS_AUDIT_2026-11.md"><img src="https://img.shields.io/badge/Engineering%20Audit%20(Nov%202026)-58.5%2F100%20Hardened%20Pre--Alpha-purple?style=for-the-badge" alt="Engineering Audit November 2026: 58.5/100 after remediation (39/100 baseline)" /></a>
   <a href="DEVELOPER_GUIDE.md"><img src="https://img.shields.io/badge/Ledger-SHA--256%20Hash--Chained-orange?style=for-the-badge" alt="Ledger" /></a>
 </p>
 
@@ -31,14 +31,15 @@
 |---|:---:|---|---|
 | **Constitutional Framework** | 🟢 **Ratified & Binding** | 10 Laws for Intelligence Systems & Core Tenets | [`Permanent_Active_Directives.txt`](Permanent_Active_Directives.txt), [`AGENTIC_PRIME_DIRECTIVE.md`](AGENTIC_PRIME_DIRECTIVE.md) |
 | **Runtime Enforcement Covenant** | 🟢 **Ratified & Binding** | 3-Tier Risk Model, Attestation, Gap Registry | [`AGENTIC_SACRED_COVENANT.md`](AGENTIC_SACRED_COVENANT.md), [`GOVERNANCE.md`](GOVERNANCE.md) |
-| **Python SDK Kernel** | 🟡 **v0.1.0 Pre-alpha** (security fixes P1–P6 pending) | Interceptor Kernel, Invariant Gating, Ledger Engine | [`src/autonomous_governance/`](src/autonomous_governance/), [`pyproject.toml`](pyproject.toml) |
+| **Python SDK Kernel** | 🟡 **v0.1.0 Pre-alpha** (P0 security fixes landed; P9 open) | Interceptor Kernel, Invariant Gating, Ledger Engine | [`src/autonomous_governance/`](src/autonomous_governance/), [`pyproject.toml`](pyproject.toml) |
 | **Charter Verification** | 🟢 **Verified** | SHA-256 Digest Pinning (`LAW10-CHARTER` v3.2.1) | [`config/charter_manifest.json`](config/charter_manifest.json), [`scripts/verify_charter.py`](scripts/verify_charter.py) |
-| **Automated Invariant Tests** | 🟢 **22/22 Passing in CI** (52% line coverage) | LAW1, LAW2, LAW3, LAW9, LAW10, Ed25519, DPAPI, Linter | [`tests/`](tests/), [`.github/workflows/governance_ci.yml`](.github/workflows/governance_ci.yml) |
-| **Hardware & Token Security** | 🟠 **Implemented; default config unsafe** | RFC 8032 Ed25519 tokens, Windows DPAPI. Without a pinned operator key, an agent can self-approve (P1/P2). | [`src/autonomous_governance/security.py`](src/autonomous_governance/security.py) |
+| **Automated Tests** | 🟢 **203 passing** on Windows and 201 on Linux, of 204 (79% line coverage) | LAW1, LAW2, LAW3, LAW9, LAW10, Ed25519, DPAPI, linter, installer, plugin hooks | [`tests/`](tests/), [`.github/workflows/governance_ci.yml`](.github/workflows/governance_ci.yml) |
+| **Hardware & Token Security** | 🟡 **Fails closed** | RFC 8032 Ed25519 tokens, Windows DPAPI. Elevated actions are refused unless an operator public key is pinned. | [`src/autonomous_governance/security.py`](src/autonomous_governance/security.py) |
+| **Agent Plugin** | 🟡 **Pre-alpha** (verified live on Copilot CLI 0.0.410 for Windows; Claude Code and VS Code not yet tried live) | Copilot CLI, VS Code and Claude Code hooks: charter at session start, deny/ask before each tool call, hash-chained decision ledger | [`.plugin/`](.plugin/), [`.claude-plugin/`](.claude-plugin/), [`hooks/`](hooks/), [`skills/`](skills/) |
 | **Compliance Badge** | 🟡 **Self-assessed** | SVG badge & Shields.io endpoint from `laws-lint`. Not a third-party certification. | [`assets/compliance_badge.svg`](assets/compliance_badge.svg), [`src/autonomous_governance/badge.py`](src/autonomous_governance/badge.py) |
 | **Constitutional Linter** | 🟡 **100/100 self-score** (blind spots P13/P14) | Static audit of prompts, tool calls, and scripts | [`src/autonomous_governance/linter.py`](src/autonomous_governance/linter.py) (`laws-lint`) |
-| **World-Class Engineering Audit** | 🟣 **Nov 2026: 39/100** (≈70 after P0/P1) | Evidence-based audit, findings P1–P19, market position | [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md) |
-| **Installation Methods Report** | 🟣 **Complete** | Charter-copy vs. agent-plugin install, tested plugin prototype | [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md), [`scripts/install_charter.ps1`](scripts/install_charter.ps1) |
+| **World-Class Engineering Audit** | 🟣 **Nov 2026: 39/100 baseline → 58.5/100** after P0 fixes and the plugin (self-assessed; ≥ 70 needs the rest of P1) | Evidence-based audit, findings P1–P19, market position | [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md) |
+| **Installation Methods Report** | 🟣 **Complete** | Charter-copy vs. agent-plugin install; both routes now ship (`agy-governance init`, the plugin) | [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md), [`scripts/install_charter.ps1`](scripts/install_charter.ps1) |
 | **Critical Internal Audit** | ⚪ **Superseded** | August 2026 gap assessment (historical) | [`CRITICAL_AUDIT.md`](CRITICAL_AUDIT.md) |
 | **Market Landscape Audit** | 🟣 **v2.0.0 (Nov 2026)** | ≈ $0.4–0.5B market in 2026 (cited), EU AI Act Omnibus dates, competitor matrix | [`MARKET_AUDIT.md`](MARKET_AUDIT.md) |
 | **Executive Scorecard** | 🟣 **v3.0.0** | Consolidated project health, Risk Register, Roadmap | [`EXECUTIVE_SUMMARY.md`](EXECUTIVE_SUMMARY.md) |
@@ -189,13 +190,44 @@ pip install -e ".[dev,crypto]"
 ```
 
 > [!IMPORTANT]
-> **The package does not contain the charter.** `GovernanceKernel` refuses to boot unless the three charter documents **and** `config/charter_manifest.json` are present, byte-identical, in the working directory it is started from. To use AGL in your own project, copy them as *files* and verify them:
+> **`GovernanceKernel` refuses to boot unless the three charter documents and `config/charter_manifest.json` are present and byte-identical.** The package ships a verified copy. Install it into your own project with:
 >
-> ```powershell
-> powershell -ExecutionPolicy Bypass -File scripts\install_charter.ps1 -Target D:\Projects\MyAgent
+> ```bash
+> agy-governance init --target /path/to/MyAgent            # charter + manifest, verified
+> agy-governance init --target /path/to/MyAgent --loaders  # also AGENTS.md, CLAUDE.md, .agents/rules/
 > ```
 >
-> Never retype the documents, paste them from rendered Markdown, or re-save them in an editor: an added BOM, a trailing newline, or a changed dash breaks the pinned digests. To give an AI assistant the charter as instructions (`AGENTS.md`, `CLAUDE.md`, Antigravity rules), or to learn about the agent-plugin route, see [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md). AGL is not yet published to PyPI and is not yet an installable agent plugin.
+> `init` plans every change first and never overwrites a differing file without `--force` (`--dry-run` shows the plan). Never retype the documents, paste them from rendered Markdown, or re-save them in an editor: an added BOM, a trailing newline, or a changed dash breaks the pinned digests. [`scripts/install_charter.ps1`](scripts/install_charter.ps1) does the same copy-and-verify without Python. AGL is not yet published to PyPI.
+
+### 1b. Install as an Agent Plugin (Copilot CLI, VS Code, Claude Code)
+
+The repository is also an agent plugin. It enforces the charter on the coding assistant's own tool calls, which the SDK cannot see.
+
+**Requirements**
+- **Python 3.10+** must be on `PATH`, or set `AGL_PYTHON`.
+- **Windows: PowerShell 7 (`pwsh`).** Copilot CLI runs hooks with `pwsh.exe`; Windows PowerShell 5.1 is not enough. Without `pwsh`, Copilot CLI logs a hook error and runs every tool call ungoverned.
+- **Copilot CLI: run `copilot update`.** Builds 0.0.4xx (check with `copilot --version`) cannot ask for approval and ignore session-start context. On those builds the plugin denies elevated actions (every shell command and file edit) unless `AGL_ELEVATED_DECISION=defer` is set.
+
+```bash
+# GitHub Copilot CLI
+copilot plugin install kirklasalle/AutonomousGovernanceLaws
+
+# Claude Code
+/plugin marketplace add kirklasalle/AutonomousGovernanceLaws
+/plugin install autonomous-governance-laws@autonomous-governance-laws
+```
+
+In VS Code, install it as an agent plugin from the same repository. The Claude Code and VS Code routes have not yet been tried in a live session; the Copilot CLI route was verified live on Windows (CLI 0.0.410).
+
+Once installed, the plugin:
+
+- **At session start:** verifies the charter and loads the 10 Laws into the agent's context (Claude Code, VS Code and current Copilot CLI).
+- **Before every tool call:** **denies** destructive commands and any change to the charter, ledger, keys, `.halt` or the plugin itself. It **asks** the operator before other non-read-only actions (`AGL_ELEVATED_DECISION=defer` hands these to the host's own permission settings). Read-only tools proceed.
+- **Ledger:** records every decision in a hash-chained ledger in the plugin data directory (`AGL_DATA_DIR` overrides it).
+- **Emergency halt:** a `.halt` file in the project, or in that data directory, stops every tool call.
+- **On failure:** the call is denied if the hook errors, receives an oversized call, or has not decided within 20 s. The host's own 30 s timeout would otherwise let the call run.
+
+The plugin's limits are listed in [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md) and in the [`CHANGELOG`](CHANGELOG.md) under Security.
 
 ### 2. Verify Charter Integrity (CLI)
 
@@ -266,8 +298,8 @@ agy-governance approve \
 
 ### 7. Embedding the Interceptor in Your Agent Runtime
 
-> [!WARNING]
-> Always pin an operator public key (`operator_pubkey_path`). In v0.1.0, a kernel without a pinned key accepts legacy and self-signed approval tokens, so an agent can approve its own ELEVATED actions (audit findings P1/P2; fix scheduled for P0).
+> [!IMPORTANT]
+> Pin an operator public key (`operator_pubkey_path`) to approve ELEVATED actions. Without a pinned key the kernel refuses every approval token and raises `ApprovalRequired` for every ELEVATED action. Tokens are verified only against the pinned key, never against key material inside the token (audit findings P1/P2, fixed in `aae4989`). Set `require_attestation=True` to refuse to boot without a key.
 
 ```python
 from autonomous_governance import (
@@ -304,7 +336,7 @@ except ApprovalRequired as e:
     print(f"Action blocked — requires human operator approval: {e}")
 ```
 
-### 8. Running the 22 Invariant Test Cases
+### 8. Running the Test Suite
 
 ```bash
 pytest tests/ -v
@@ -334,8 +366,9 @@ gantt
     section Phase 3: Cryptography, Hardening & Packaging
     Ed25519 Tokens, DPAPI Keystore, Badge CLI    :done, p9, 2026-10-24, 2026-10-24
     Evidence-Based Re-Audit (39/100)             :done, p10, 2026-11-01, 2026-11-01
-    P0 Security Fixes (P1-P6, P15, P18, P19)     :active, p8, 2026-11-02, 2026-11-16
-    Charter Package Data, init CLI, Agent Plugin :p8b, 2026-11-16, 2026-12-14
+    P0 Security Fixes (P1-P6, P15, P18, P19)     :done, p8, 2026-11-01, 2026-11-01
+    Charter Package Data, init CLI, Agent Plugin :done, p8b, 2026-11-01, 2026-11-01
+    Live Host Plugin Trials, P9 Ledger Paths     :active, p8d, 2026-11-02, 2026-12-14
     PyPI 0.2.0 & Plugin Listing                  :p8c, 2027-01-04, 2027-01-31
 
     section Phase 4: Swarms & Post-Quantum
@@ -353,7 +386,7 @@ gantt
 | [`AGENTIC_PRIME_DIRECTIVE.md`](AGENTIC_PRIME_DIRECTIVE.md) | Operational constitution (v3.1.0) defining core directives & commitments | Engineers & Operators |
 | [`AGENTIC_SACRED_COVENANT.md`](AGENTIC_SACRED_COVENANT.md) | Human-AI covenant (v2.0) defining runtime enforcement & attestation | Systems Architects |
 | [`GOVERNANCE.md`](GOVERNANCE.md) | Runtime enforcement status matrix, Council quorum & amendment rules | Auditors & Regulators |
-| [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md) | Evidence-based engineering audit (39/100), findings P1–P19, market position, roadmap | Leadership, Security & Due Diligence |
+| [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md) | Evidence-based engineering audit (39/100 baseline, 58.5/100 after remediation), findings P1–P19, market position, roadmap | Leadership, Security & Due Diligence |
 | [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md) | Charter-copy vs. agent-plugin installation analysis, per-host loaders, tested procedure | Operators & Integrators |
 | [`CRITICAL_AUDIT.md`](CRITICAL_AUDIT.md) | August 2026 gap analysis (historical; superseded by the November 2026 audit) | Internal & Due Diligence |
 | [`MARKET_AUDIT.md`](MARKET_AUDIT.md) | AI governance market (≈ $0.4–0.5B in 2026, cited), EU AI Act, NIST & competitor matrix | Investors & Strategists |

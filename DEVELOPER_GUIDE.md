@@ -310,38 +310,41 @@ def execute_with_fallback(complex_swarm_task, minimal_engine, kernel):
 
 ---
 
-## 6. AUTOMATED TEST SUITE & COMPLIANCE CERTIFICATION
+## 6. AUTOMATED TEST SUITE
 
-To certify a runtime as compliant with the Autonomous Governance Laws, execute the 22-case invariant test suite:
+Run the suite (204 tests collected; 203 pass on Windows and 201 on Linux, and the rest are skipped because they are platform-specific):
 
 ```bash
-# Run the complete test suite
 pytest tests/ -v
 ```
 
-### Invariant Test Suite Coverage (22/22 Passing):
-1. `test_law10_charter_integrity_success`: Verifies successful boot under valid charter manifest.
-2. `test_law10_charter_tamper_fails_boot`: Proves 1-byte charter alteration fails startup (`LAW10-CHARTER`).
-3. `test_law10_actual_repo_charter_manifest_integrity`: Direct verification of live repository charter files.
-4. `test_law1_prohibit_destructive_commands`: Destructive OS or database commands raise `GovernanceViolation`.
-5. `test_risk001_elevated_approval_required`: Elevated actions without approval tokens raise `ApprovalRequired`.
-6. `test_law2_operator_halt`: Presence of `.halt` triggers immediate execution shutdown (`LAW2-HALT`).
-7. `test_law3_subordinate_self_constraint`: Block agent writes targeting `.ledger`, `config/`, or keys.
-8. `test_law9_ledger_hash_chain`: Verifies SHA-256 hash chaining across ledger events.
-9. `test_linter_compliant_file`: Confirms 100/100 score for safe codebases.
-10. `test_linter_detects_destructive_command`: Catches unconstrained destructive commands.
-11. `test_linter_detects_halt_bypass`: Catches attempts to bypass operator halts.
-12. `test_linter_detects_sovereign_gate_violation`: Catches agent attempts to clear emergency state.
-13. `test_linter_ignores_substring_eval`: Verifies word-boundary regex prevents false positives.
-14. `test_linter_ignores_markdown_code_fences`: Skips documentation examples.
-15. `test_ed25519_keypair_and_signature_roundtrip`: Verifies RFC 8032 Ed25519 key generation, signing, and verification.
-16. `test_dpapi_keystore_roundtrip`: Validates Windows DPAPI hardware-level encryption and decryption of keys.
-17. `test_action_bound_approval_token`: Proves approval tokens bind tightly to tool name and payload digest.
-18. `test_approval_token_expiration`: Rejects expired operator tokens outside validity TTL.
-19. `test_kernel_replay_protection_and_cryptographic_token`: Confirms single-use replay prevention and live kernel cryptographic gating.
-20. `test_render_svg_badge`: Validates compliance certification SVG markup rendering.
-21. `test_generate_badge_asset_formats`: Tests SVG, Shields.io JSON, and Markdown generation.
-22. `test_audit_repository_compliance_halt`: Proves compliance audit fails closed on active emergency halts.
+| File | Tests | What it proves |
+|---|---:|---|
+| [`tests/test_kernel.py`](tests/test_kernel.py) | 8 | Charter integrity and tamper refusal (LAW10-CHARTER), prohibited commands (LAW1), signed approvals (RISK-001), halt (LAW2), protected governance state (LAW3), ledger hash chain (LAW9) |
+| [`tests/test_hardening.py`](tests/test_hardening.py) | 67 | Regression tests for audit findings P1–P7, P15, P16 and P18: pinned-key-only tokens, replay across restarts, ledger resume, concurrent threads and processes, every classifier-evasion probe, path canonicalisation, fail-closed key loading |
+| [`tests/test_init.py`](tests/test_init.py) | 12 | `agy-governance init`: byte-exact charter install, verification, refusal to overwrite, instruction loaders |
+| [`tests/test_plugin_hooks.py`](tests/test_plugin_hooks.py) | 103 | Agent-plugin adapter: Copilot camelCase and snake_case payloads, both fail-closed protocols, legacy-host ask→deny, wrapper scripts and the Copilot `powershell` command under a `Restricted` policy, manifests, concurrent hooks sharing one ledger chain, multi-line commands, alternate path spellings and links, size caps, the decision watchdog |
+| [`tests/test_security.py`](tests/test_security.py) | 5 | RFC 8032 Ed25519, DPAPI round trip, payload binding, token expiry, replay |
+| [`tests/test_linter.py`](tests/test_linter.py) | 6 | `laws-lint` rules and false-positive guards |
+| [`tests/test_badge.py`](tests/test_badge.py) | 3 | Badge SVG, Shields.io JSON and Markdown output; audit fails closed on halt |
+
+Line coverage on Linux is 79% (`kernel.py` 87%, `hooks.py` 97%, `cli.py` 39%); the Windows-only path rules run only on Windows, so they count as missed there. A passing suite shows that these invariants hold for this build. It is **not** a compliance certification (see [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md)).
+
+---
+
+## 6a. HOST PLUGIN ADAPTER (`hooks.py`)
+
+The agent plugin enforces the kernel inside Copilot CLI, Claude Code and VS Code without changing the host. Install steps are in [README §1b](README.md); the design and live-trial evidence are in [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md) §4.5.
+
+- **Entry point.** The host runs [`hooks/agl-hook.ps1`](hooks/agl-hook.ps1) (Windows, PowerShell 7) or [`hooks/agl-hook.sh`](hooks/agl-hook.sh), which runs [`hooks/agl_hook.py`](hooks/agl_hook.py) `<Event>` with the event JSON on stdin. The shim imports `autonomous_governance.hooks`. `AGL_PYTHON` selects the interpreter.
+- **Protocol selection.** The event argument picks the deny protocol:
+  - `preToolUse` (camelCase, [`hooks/copilot-hooks.json`](hooks/copilot-hooks.json)) is Copilot CLI. Every deny and every internal error is printed as a JSON deny with exit status 0, because Copilot CLI 0.0.4xx runs the tool after any non-zero exit.
+  - `PreToolUse` and the other PascalCase events (Claude Code, VS Code) use exit status 2 for denials and errors.
+- **Decisions.** PROHIBITED and halt → deny. ELEVATED → ask; `AGL_ELEVATED_DECISION=defer` hands the call to the host's permission flow and `=deny` refuses it. On hosts that send no `sessionId` (Copilot CLI 0.0.4xx), ask becomes deny. SAFE → no decision.
+- **State.** The ledger and the global `.halt` live in the plugin data directory: `AGL_DATA_DIR`, then the host's plugin-data variable, then `~/.agl/plugin-data`. A `.halt` in the agent's working directory also stops every call. The data directory, the plugin install root and the packaged charter are passed as `protected_roots`, so the agent cannot edit the plugin or its ledger. The exception is a workspace inside the plugin itself, as when developing it: there only the charter files and the data directory stay locked.
+- **Bounded work.** Hosts run the tool when a hook times out, so the hook never waits that long. It denies events over `MAX_EVENT_BYTES` (1 MiB), calls carrying more than `MAX_INSPECTED_CHARS` (256 KiB) of commands and paths, with file contents excluded, and writes naming more than `MAX_WRITE_PATHS` (512) paths. A watchdog thread denies any call still undecided after `HOOK_DEADLINE` (20 s); `main(deadline=None)` disables it, and tests replace `hooks._exit`.
+- **Host failure settings.** The Copilot `powershell` command prints a JSON deny itself if PowerShell cannot load the wrapper (execution policy, missing file). The Claude Code `PreToolUse` hook sets `"onFailure": "block"` (Claude Code 2.1.295 or later).
+- **Known limits.** Host timeouts (30 s) still fail open in Copilot CLI and VS Code, but the watchdog answers first once Python is running. A hook that cannot start fails open on Copilot CLI 0.0.4xx. Device paths (`\\?\GLOBALROOT\…`), volume-GUID paths, and 8.3 names or links inside shell commands are not resolved; they are asked about, not allowed. Each call costs about 0.75 s on Windows and writes 2 ledger events.
 
 ---
 

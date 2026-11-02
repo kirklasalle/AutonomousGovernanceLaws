@@ -8,12 +8,12 @@
 **Scope:** Universal Autonomous Agent Runtimes, Multi-Agent Swarms, and Governance Telemetry  
 
 > [!NOTE]
-> **Implementation status (2026-11-01).** This PRD states *target* requirements. Against v0.1.0 ([`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md)):
-> - The ledger is a **linear SHA-256 hash chain**. Merkle trees and signed checkpoints are not yet implemented (P17).
-> - **NFR-01** is met (0.49–0.71 ms). **NFR-02** is not met (synchronous writes).
-> - **NFR-04** fail-closed is violated in the default configuration (P1/P2, P15).
+> **Implementation status (2026-11-02).** This PRD states *target* requirements. Against v0.1.0 after the P0 remediation ([`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md) §1a):
+> - The ledger is a **linear SHA-256 hash chain** that resumes across restarts and is locked across processes. Merkle trees and signed checkpoints are not yet implemented (P17).
+> - **NFR-01** is met by the kernel (0.49–0.71 ms, measured before the ledger lock was added). The agent-plugin hook adds about 0.75 s per host tool call on Windows, mostly Python start-up. **NFR-02** is not met (synchronous writes).
+> - **NFR-04** fail-closed is met by the kernel: no ELEVATED action runs without a pinned operator key (P1/P2), and key loading fails closed (P15). Under the agent plugin, hook errors, oversized calls and decisions slower than 20 s are denied, which is before the host's 30 s timeout would let the call run. A hook that cannot start at all still fails open on Copilot CLI 0.0.4xx; that is host behaviour the plugin cannot override.
 > - **NFR-05** (post-quantum) is planned.
-> - Zero-bypass enforcement applies only to calls routed through `GovernanceKernel`.
+> - Zero-bypass enforcement applies only to calls routed through `GovernanceKernel`. Since 2026-11-02 that includes coding-agent tool calls via the agent plugin; verified live in Copilot CLI only.
 
 ---
 
@@ -257,8 +257,10 @@ gantt
     section Runtime SDK & Production Release
     Python SDK & laws-lint Linter Engine            :done, 2026-09-28, 2026-10-24
     Council Ratification & Manifest v3.2.1 Re-Pin   :done, 2026-10-24, 2026-10-24
-    PyPI Package v0.1.0 Release & GitHub Launch     :active, 2026-10-24, 2026-11-15
-    Hardware Attestation (DPAPI / PKCS#11 Keys)     :2026-11-15, 2026-12-31
+    P0 Hardening, init CLI & Agent Plugin           :done, 2026-11-01, 2026-11-02
+    Signed Checkpoints, Coverage Gate, Live Trials  :active, 2026-11-16, 2026-12-14
+    PyPI Package v0.2.0 Release (after P1)          :2027-01-04, 2027-01-31
+    PKCS#11 / HSM Operator Keys                     :2027-06-01, 2027-12-01
     Swarm CAC Token Federation & Post-Quantum Prep   :2027-01-01, 2027-06-30
 ```
 

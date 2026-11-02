@@ -11,9 +11,13 @@
 | **Method** | Empirical: tests + coverage + adversarial probe scripts + line-level code review; external claims verified against primary sources via the project-local MCP fleet (`.mcp/`) |
 | **Supersedes** | All health scores and market figures in documents dated before 2026-11-01 |
 | **Companion** | [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md): charter-copy vs. plugin installation analysis (adds P18, P19) |
+| **Re-assessed** | 2026-11-02 after the remediation commits: composite **58.5 / 100** (§1a) |
 
 > [!IMPORTANT]
 > **Bottom line.** AGL is a well-conceived, cleanly structured **pre-alpha** library with genuinely differentiated ideas (SHA-256-pinned constitutional charter, payload-bound single-use Ed25519 operator approvals, zero-dependency local-first design). It is **not production-ready**: in its **default configuration** an agent can self-approve any elevated action (P1/P2), the tamper-evident ledger breaks across restarts and under concurrency (P4/P5/P17), and the risk classifier is trivially evaded (P6). Several documents overstate maturity ("Production Alpha", "Merkle ledger", "Security 99/100", "certified for production"). The composite engineering score under a reproducible rubric is **39 / 100**; completing the P0/P1 remediation plan in §8 projects to **≈70 / 100**.
+
+> [!NOTE]
+> **Re-assessment, 2026-11-02 (§1a).** After the P0 hardening (`aae4989`), the `init` installer and package data (`ec61164`), and the agent plugin, the same rubric gives **58.5 / 100**: hardened pre-alpha, not yet a public beta. The plugin was verified live in Copilot CLI. This is a self-assessment by the remediation author; an independent review is still recommended. The original findings and scores below are kept as the baseline.
 
 ---
 
@@ -36,6 +40,41 @@ Scores are 0–10 per dimension against a world-class reference (e.g. a security
 | | Projected after §8 P0 + P1 | | **≈ 70 / 100** | Credible public beta |
 
 **Reconciling the prior scores.** [`EXECUTIVE_SUMMARY.md`](EXECUTIVE_SUMMARY.md) v2.0.0 reported **93.4**, [`index.html`](index.html) and [`presentation.html`](presentation.html) report **71**, and [`CRITICAL_AUDIT.md`](CRITICAL_AUDIT.md) reported **44**. None of these had a reproducible rubric. The 93.4 figure is withdrawn. The 44 (pre-code, August 2026) is directionally consistent with this audit once shipped code and newly found defects are both accounted for.
+
+### 1a. Re-assessment after remediation (2026-11-02)
+
+Same rubric and weights as §1. Evidence comes from:
+- the remediation commits, `aae4989` (P0 hardening) and `ec61164` (`init`, package data, loaders), plus the agent-plugin commit;
+- 204 tests collected: 203 pass on Windows and 201 on Linux (WSL); the rest are platform-specific skips;
+- 79% line coverage on Linux, Python 3.14 (`hooks.py` 97%, `kernel.py` 87%, `cli.py` 39%);
+- `laws-lint` clean;
+- a live Copilot CLI 0.0.410 session with the plugin ([INSTALLATION_METHODS_REPORT.md](INSTALLATION_METHODS_REPORT.md) §4.5);
+- an independent code review of the plugin. All five of its findings were reproduced, then fixed with regression tests ([CHANGELOG](CHANGELOG.md), "Code-review fixes").
+
+| Finding | Status |
+|---|---|
+| P1, P2 (self-approval) | **Fixed.** Tokens verify only against a pinned operator key; the legacy path is removed. |
+| P3 (replay) | **Fixed.** Granted approvals are found in the ledger across restarts. |
+| P4, P5 (chain resets, concurrency) | **Fixed.** Cross-process file lock; chain resumes from disk; multi-process test. |
+| P6 (classifier) | **Mitigated.** NFKC, zero-width stripping, shell segmentation, path canonicalisation, unknown tools ELEVATED, host tool-name mapping. After the code review, line breaks also end a command. Protected paths are also caught when spelled with `\\?\`, `\\localhost\C$`, `file://`, data streams or links. Two quadratic regular expressions were replaced. Still a pattern matcher, not a sandbox. |
+| P7, P16 (failure and binding evidence) | **Fixed.** `TOOL_FAILED`; `payload_sha256` on decisions; `APPROVAL_GRANTED` with key fingerprint. |
+| P15 (key storage) | **Fixed** for DPAPI fail-open and 0600 key files. Keys off Windows are still unencrypted at rest. |
+| P18, P19 (paths, distribution) | **Fixed.** Manifest-relative paths; charter shipped as package data; `agy-governance init`; installable agent plugin. |
+| P9, P10, P13, P14, P17 | **Open.** CWD-relative default ledger/halt paths, SVG escaping, linter blind spots and labels, signed ledger checkpoints. |
+| New plugin risks | Host hook timeouts fail open, so the hook caps input size and its own 20 s watchdog denies first once Python is running. Claude Code's hook sets `onFailure: block`. On Copilot CLI 0.0.4xx, a hook that cannot start (no `pwsh` on Windows) still fails open, and "ask" is unavailable, so elevated actions are denied. Each tool call costs 0.72–0.76 s on Windows. |
+
+| # | Dimension | Weight | Was | Now | Why |
+|---|---|---:|---:|---:|---|
+| 1 | Architecture & modularity | 10% | 6 | **7** | Project-root resolution, `protected_roots`, a thin host adapter over the unchanged kernel. Policy is still hard-coded; P9 open. |
+| 2 | Security correctness | 25% | 3 | **6** | P1/P2/P15 fixed and P6 mitigated. Hooks fail closed on every error the host reports. The classifier is still pattern-based; plugin fail-open edges remain (above). |
+| 3 | Audit-trail integrity | 15% | 3 | **6** | P3/P4/P5/P7/P16 fixed and verified across processes and live. P17 (truncation, rewrite) still undetectable without signed checkpoints. |
+| 4 | Testing & QA | 15% | 4 | **6** | 22 → 204 tests on two OSes, 52% → 79% coverage, probe and code-review regressions, concurrency and live-host evidence, one randomised equivalence test. No 85% gate; CLI 39%; no fuzzing. |
+| 5 | Static analysis | 5% | 3 | **3** | Unchanged (P13, P14). |
+| 6 | DevEx, CI & packaging | 10% | 5 | **6** | `init`, package data, one-command plugin install. Not on PyPI; no signing, SBOM or Scorecard. |
+| 7 | Documentation accuracy | 10% | 3 | **6** | Over-claims withdrawn, supersession notices, live-trial evidence. Legacy HTML and deck pages still need a pass. |
+| 8 | Performance | 5% | 7 | **6** | Kernel is not re-benchmarked after locking. The plugin adds about 0.75 s per host tool call on Windows. |
+| 9 | Standards alignment | 5% | 4 | **4** | Unchanged: no OWASP ASI mapping document and no Art. 12 export yet. |
+| | **Composite** | **100%** | **39** | **58.5 / 100** | **Hardened pre-alpha.** The §8 P1 phase (P9, P13, P14, P17, coverage gate, SAST, PyPI) is still needed for ≥ 70. |
 
 ---
 
@@ -277,6 +316,11 @@ Standalone guardrail start-ups are being absorbed into security platforms, and h
 - Lead with what is genuinely different: charter pinning and cryptographically non-self-clearing approvals.
 - Pair each claim with a mapped control (OWASP ASI02/05/09/10; EU AI Act Art. 12/14 evidence export).
 
+**Update, 2026-11-02.**
+- The P1/P2 self-approval bypass is closed, and the ledger defects P3–P5 are fixed (§1a). The "Behind" row now reads mainly: distribution (no PyPI), policy-as-code, regulatory mapping, OTel export and ecosystem.
+- AGL now ships an installable agent plugin that enforces the kernel inside Copilot CLI, verified live. It also carries Claude Code manifests, which are not yet tried live. This is the first step towards "embeddable inside agent frameworks".
+- The plugin is at parity with the hook-based interception that hosts already offer; the differentiators remain the charter pin and the signed approvals.
+
 ### 6.5 SWOT (updated)
 
 | Strengths | Weaknesses |
@@ -314,6 +358,11 @@ AGL is a *component*. It cannot make a system compliant, but it can produce evid
 | **P2: Release** | Q1 2027 | PyPI 0.2.0 via Trusted Publishing; Sigstore/PEP 740 attestations; SBOM; SECURITY advisories for P1/P2 | Installable `pip install autonomous-governance-laws` |
 | **P3: Market fit** | Q1–Q2 2027 | OWASP ASI mapping doc; EU AI Act Art. 12/14 evidence-pack exporter; MCP 2026-07-28 middleware adapter; adapters for LangGraph / OpenAI Agents SDK / Microsoft Agent Framework; optional OPA/Cedar policy backend | Two external design partners |
 | **P4: Assurance** | H2 2027 | Algorithm agility + hybrid Ed25519/ML-DSA (FIPS 204); M-of-N operator quorum; PKCS#11/HSM; external ledger anchoring | Independent third-party security review |
+
+**Status, 2026-11-02.**
+- **P0 is complete** (`aae4989`, `ec61164`): every listed item is done, and the probe suite is now regression tests.
+- **P1 is partly done.** Done: P3, P7, P16, `agy-governance init`, and the agent-plugin package with live E2E evidence (Copilot CLI). Open: P9, P10, P13, P14, P17, the 85% coverage gate, SAST, type and lint gates in CI, and live trials in Claude Code and VS Code.
+- See §1a for the re-score.
 
 ---
 

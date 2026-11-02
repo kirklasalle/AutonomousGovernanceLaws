@@ -1,0 +1,22 @@
+{
+  "name": "autonomous-governance-laws",
+  "description": "Runtime enforcement of the Autonomous Governance Laws (AGL) charter. Every agent tool call is classified by the AGL kernel: destructive commands and changes to governance state are denied, elevated actions need operator approval, and every decision is written to a hash-chained ledger. The SHA-256-verified charter is loaded at session start.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Kirk LaSalle",
+    "url": "https://github.com/kirklasalle"
+  },
+  "homepage": "https://github.com/kirklasalle/AutonomousGovernanceLaws",
+  "repository": "https://github.com/kirklasalle/AutonomousGovernanceLaws",
+  "license": "Apache-2.0",
+  "keywords": [
+    "ai-governance",
+    "agent-safety",
+    "guardrails",
+    "policy-enforcement",
+    "audit-ledger",
+    "hooks"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/claude-hooks.json"
+}

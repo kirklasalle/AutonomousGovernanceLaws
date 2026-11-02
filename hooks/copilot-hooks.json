@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "bash \"${PLUGIN_ROOT}/hooks/agl-hook.sh\" sessionStart",
+        "powershell": "$agl = $null; try { & \"${PLUGIN_ROOT}/hooks/agl-hook.ps1\" sessionStart; $agl = $LASTEXITCODE } catch { [Console]::Error.WriteLine($_) }; if ($null -eq $agl) { exit 2 }; exit $agl",
+        "timeoutSec": 30
+      }
+    ],
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "bash \"${PLUGIN_ROOT}/hooks/agl-hook.sh\" preToolUse",
+        "powershell": "$agl = $null; try { & \"${PLUGIN_ROOT}/hooks/agl-hook.ps1\" preToolUse; $agl = $LASTEXITCODE } catch { [Console]::Error.WriteLine($_) }; if ($null -eq $agl) { '{\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"AGL governance hook failed closed: PowerShell could not run agl-hook.ps1 (check the execution policy).\"}'; exit 0 }; exit $agl",
+        "timeoutSec": 30
+      }
+    ]
+  }
+}

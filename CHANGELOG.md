@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - 2026-11-01
 
-Runtime hardening (P0 defects from the audit) plus documentation and tooling. The charter documents and `config/charter_manifest.json` are unchanged (digests v3.2.1 still verify).
+Runtime hardening (P0 defects from the audit), the `init` installer, an agent plugin for Copilot CLI, VS Code and Claude Code, plus documentation and tooling. The charter documents and `config/charter_manifest.json` are unchanged (digests v3.2.1 still verify).
 
 ### ⚠ Breaking changes
 - **Elevated actions fail closed without a pinned operator key.** `verify_approval_token` and the kernel now refuse every token unless a 32-byte operator public key is pinned (`operator_pubkey_path`). Run `agy-governance keygen` first.
@@ -40,6 +40,33 @@ Runtime hardening (P0 defects from the audit) plus documentation and tooling. Th
   - Twelve-scenario byte-exactness probe.
   - Tested agent-plugin prototype for Copilot CLI (`sessionStart` charter injection, `preToolUse` enforcement).
 - **[`scripts/install_charter.ps1`](scripts/install_charter.ps1)**: copies the three charter documents and the manifest into a target project byte-for-byte, then verifies them with the kernel's own LF-normalised SHA-256 rule (`-Force`, `-VerifyOnly`).
+- **Agent plugin `autonomous-governance-laws`** for GitHub Copilot CLI, VS Code agent mode and Claude Code. The repository root is the plugin.
+  - Manifests:
+    - `.plugin/plugin.json` points to `hooks/copilot-hooks.json`. Current Copilot CLI releases and VS Code read it, as in Microsoft's shipping plugins.
+    - `.github/plugin/plugin.json` is an identical copy, because Copilot CLI 0.0.4xx reads only that path or a root `plugin.json`. There is deliberately no root `plugin.json`: newer hosts read it first and treat it as an Agent Plugins manifest.
+    - `.claude-plugin/plugin.json` points to `hooks/claude-hooks.json`, and `.claude-plugin/marketplace.json` lets Claude Code add the repository as a marketplace.
+    - There is no `hooks/hooks.json`, so no hook is registered twice.
+  - `hooks/copilot-hooks.json` registers camelCase `sessionStart` and `preToolUse` events with only `bash` and `powershell` commands. Copilot CLI 0.0.410 silently drops PascalCase events and per-OS keys. On Windows, Copilot CLI runs hooks with `pwsh.exe`, so **PowerShell 7 is required**.
+  - `SessionStart` verifies the charter and gives the agent the Permanent Active Directives verbatim, plus the paths of the other two documents (kept under Claude Code's 10,000-character context limit). Set `AGL_SESSION_CONTEXT=full` to inline all three documents instead. Copilot CLI 0.0.4xx ignores `sessionStart` output: there the charter is enforced and ledgered, and the skill is loaded, but the charter text is not injected.
+  - `PreToolUse` maps the host tool onto the kernel's vocabulary (shell → `execute_command`; file edits, including `apply_patch` and diff targets → `write_file`; read-only tools → `read_file`), then:
+    - **denies** prohibited actions and every call while a `.halt` file exists;
+    - **asks** the operator for elevated actions (`AGL_ELEVATED_DECISION=defer` or `deny` changes this). Copilot CLI builds that send no `sessionId` (0.0.4xx) ignore "ask" and would run the tool, so for them ask becomes **deny**, with a reason that suggests `copilot update` or `defer`;
+    - lets read-only actions proceed.
+  - Every decision is ledgered as `HOOK_DECISION` with a payload digest, never the raw arguments.
+  - The plugin directory, the charter source and the plugin data directory (`AGL_DATA_DIR`, else the host's plugin-data variable, else `~/.agl/plugin-data`) are protected. When the workspace is the plugin itself, only the charter files and the data directory stay locked.
+  - New `skills/agl-charter/SKILL.md` tells the agent how to behave on deny, ask and halt.
+  - Entry points: `hooks/agl_hook.py`, plus the `agl-hook.sh` and `agl-hook.ps1` wrappers, which find a Python 3.10+ interpreter (`AGL_PYTHON` overrides).
+- `autonomous_governance.hooks`: the host hook adapter (`map_tool`, `main`, `deny_output`).
+- `GovernanceKernel(protected_roots=...)`: extra directories whose whole tree is governance state. Protected paths now expand `~`.
+- **`tests/test_plugin_hooks.py`**: covers
+  - decision matrices in both host formats, halt, and ledger privacy;
+  - fail-closed input in both deny protocols, and the legacy-host ask-to-deny rule;
+  - a tampered charter and a kernel that fails to import;
+  - concurrent hook processes keeping one chain;
+  - both wrapper scripts, run the way each host runs them;
+  - manifest and hook-config consistency;
+  - code-review regressions: multi-line commands, `write_bash` keystrokes, alternate spellings of protected paths, links into governance state, the size caps and the decision watchdog, and the Copilot `powershell` command under a `Restricted` execution policy and with the plugin missing.
+- The sdist now includes the plugin tree (`hooks/`, `skills/`, `.plugin/`, `.github/plugin/`, `.claude-plugin/`).
 
 ### Changed
 - **[`EXECUTIVE_SUMMARY.md`](EXECUTIVE_SUMMARY.md) v3.0.0**: the 93.4 score is withdrawn.
@@ -58,6 +85,31 @@ Runtime hardening (P0 defects from the audit) plus documentation and tooling. Th
 ### Security
 - P1/P2, P4/P5, P6, P15 and P18 are fixed (see **Fixed** above). The classifier is still a pattern matcher, not a sandbox: treat it as defence in depth.
 - Still open: P9, where the default ledger and halt paths depend on the working directory. Pass absolute `ledger_path` and `halt_file` values.
+- **Plugin hooks fail closed.** Hosts block on different signals, so the event argument selects the protocol.
+  - Copilot CLI (camelCase `preToolUse`): every denial and every error is a single JSON deny with exit 0. Copilot CLI 0.0.410 runs the tool after a non-zero exit or unparsable output.
+  - Claude Code and VS Code: exit 2.
+  - Claude Code's `PreToolUse` hook also sets `"onFailure": "block"`, so a hook that cannot start, crashes or times out blocks the tool. This needs Claude Code 2.1.295 or later; older builds were not tested.
+  - Copilot's `powershell` hook command prints a JSON deny itself when PowerShell cannot run `agl-hook.ps1` (an execution policy that forbids scripts, or a missing file). Before, `exit $LASTEXITCODE` exited 0 with no output there, and Copilot CLI ran the tool.
+  - Covered failures: unreadable input, an unknown event, a tampered charter, a ledger lock timeout, a missing interpreter, a kernel that fails to import, a wrapper PowerShell will not load, oversized input, and a decision that misses the deadline.
+- **Code-review fixes (2026-11-02)**, each with a regression test:
+  - A line break (`\n`, `\r\n`) now ends a command, as `;` does, and `write_bash` `{enter}` keystrokes count as line breaks. Before, `echo hi` followed on the next line by a recursive forced delete of the home directory was only "ask". Continued lines (trailing `\` or backtick) are still read as one command too.
+  - Protected paths are recognised when written as `\\?\C:\…`, `\\.\C:\…`, `\\?\UNC\localhost\C$\…`, `\\localhost\C$\…` or `\\127.0.0.1\C$\…`, a `file://` URI, with an alternate data stream (`::$DATA`, `::$INDEX_ALLOCATION`), or with trailing dots. Explicit path arguments are also resolved on disk, so a symlink or junction into governance state is caught.
+  - Two quadratic regular expressions were replaced with linear code: patch and diff header parsing (3.05 s on 20,000 spaces) and SQL-comment stripping (1.81 s on 10,000 `/*`).
+  - Bounded work: events over 1 MiB, calls carrying more than 256 KiB of commands and paths (file contents excluded), and writes naming more than 512 paths are denied. Each distinct token is classified once per command. The slowest input measured at the cap takes about 5.5 s.
+  - A watchdog denies any call still undecided after 20 s, before a host's 30 s timeout would let the tool run.
+- Known limits:
+  - A host hook *timeout* (30 s) still fails open in Copilot CLI and VS Code, but once Python is running the hook's 20 s watchdog answers first. On Copilot CLI 0.0.4xx, a hook that cannot start at all still fails open: without `pwsh.exe` on Windows the CLI logs the error and runs the tool ungoverned.
+  - Some path spellings are still not resolved, and fall to "ask", not "allow": device paths such as `\\?\GLOBALROOT\…`, volume-GUID paths, 8.3 short names and links used inside shell commands (only explicit path arguments are resolved on disk), and a command typed across separate `write_bash` calls.
+  - On Copilot CLI 0.0.4xx, elevated actions are denied, including every shell command and file edit, unless `AGL_ELEVATED_DECISION=defer` is set; `copilot update` restores "ask". "Ask" also counts as deny in Copilot cloud agent and autopilot runs.
+  - Shell reads of governance files are elevated, not prohibited.
+  - Each tool call adds two ledger events (`KERNEL_BOOT` and `HOOK_DECISION`); archive the plugin ledger periodically.
+  - Measured live on Windows: the hook adds 0.72–0.76 s to each tool call through `pwsh` and the PowerShell wrapper, and 1.2 s at session start.
+- **Live verification (2026-11-02)**: Copilot CLI 0.0.410 on Windows (PowerShell 7.6.9, Python 3.15.2), plugin installed with `copilot plugin install` into an isolated profile.
+  - The CLI loaded both hooks.
+  - Results: a file read was allowed; creating a project file and running `git status` were denied (elevated, legacy host); a write into the plugin data directory was denied (`LAW1-PROHIBIT`). Neither file was created.
+  - The 11-event ledger chain verified, and every denial message cites its ledger event.
+  - The code-review fixes came after this trial, which was not repeated. The new `powershell` command was run directly, as Copilot CLI runs it, with the same PowerShell 7.6.9 and with Windows PowerShell 5.1. It denied in all three cases: normal, `Restricted` policy, and plugin missing.
+  - Claude Code and VS Code have not yet been exercised live; their tests drive the hook scripts with each host's documented payloads.
 - Do not publish the 0.1.0 `dist/` artifacts. They contain the unfixed defects.
 
 ---

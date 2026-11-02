@@ -23,9 +23,10 @@ import shlex
 import threading
 import time
 import unicodedata
+import urllib.parse
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Iterator, NamedTuple, TypeVar
+from typing import Any, Callable, Iterable, Iterator, NamedTuple, TypeVar
 
 if os.name == "nt":
     import msvcrt
@@ -144,8 +145,11 @@ def _release_file_lock(fd: int) -> None:
 # --------------------------------------------------------------------------
 
 _ZERO_WIDTH_RE = re.compile("[\u200b\u200c\u200d\u2060\ufeff]")
-_PUNCT_CHARS = frozenset("();<>|&")
-_FALLBACK_TOKEN_RE = re.compile(r"[();<>|&]+|[^\s();<>|&]+")
+# Line breaks end a command like ';' does (bash, PowerShell, cmd).
+_SHELL_PUNCTUATION = "();<>|&\r\n"
+_PUNCT_CHARS = frozenset(_SHELL_PUNCTUATION)
+_FALLBACK_TOKEN_RE = re.compile(r"[();<>|&\r\n]+|[^\s();<>|&]+")
+_LOCAL_SHARE_RE = re.compile(r"\\\\([^\\]+)\\([a-z])\$(?=\\|$)", re.I)
 _ASSIGNMENT_RE = re.compile(r"[a-z_][a-z0-9_]*=")
 _WRAPPER_ARG_RE = re.compile(r"\d+(?:\.\d+)?[smhd]?")
 _DRIVE_RE = re.compile(r"[a-z]:/?")
@@ -158,7 +162,6 @@ _ROOT_ALIASES = frozenset({
     "$env:systemroot", "$env:windir", "%systemdrive%", "%userprofile%", "%homedrive%",
     "%systemroot%", "%windir%",
 })
-_SQL_COMMENT_RE = re.compile(r"/\*.*?\*/|--[^\n]*", re.S)
 _SQL_DESTRUCTIVE_RE = re.compile(r"\bdrop\s+(?:database|schema|table)\b|\btruncate\s+table\b")
 _EXTRA_PROHIBITED_RES = (
     re.compile(r"--no-preserve-root"),
@@ -227,12 +230,87 @@ def _clean_component(part: str) -> str:
     return part.split(":", 1)[0].rstrip(". ") if len(part) > 2 else part
 
 
+def _win_local_path(raw: str) -> str:
+    """Rewrite Windows spellings of a local path into its plain ``C:\\...`` form."""
+    path = raw.replace("/", "\\")
+    low = path.lower()
+    if low.startswith(("\\\\?\\unc\\", "\\\\.\\unc\\")):
+        path = "\\\\" + path[8:]
+    elif low.startswith(("\\\\?\\", "\\\\.\\")):
+        path = path[4:]
+    share = _LOCAL_SHARE_RE.match(path)
+    hosts = {"localhost", "127.0.0.1", os.environ.get("COMPUTERNAME", "").lower()} - {""}
+    if share and share.group(1).lower() in hosts:
+        rest = path[share.end():] or "\\"
+        path = share.group(2) + ":" + rest
+    parts = path.split("\\")
+    for i, part in enumerate(parts):
+        drive = ""
+        if i == 0 and re.match(r"[a-z]:", part, re.I):
+            drive, part = part[:2], part[2:]
+        if part and part not in (".", ".."):
+            part = part.split(":", 1)[0].rstrip(". ") or part
+        parts[i] = drive + part
+    return "\\".join(parts)
+
+
+def _local_path(value: str) -> str:
+    """Undo spellings that name the same local file: quotes, ``~``, ``file://`` URIs and,
+    on Windows, ``\\\\?\\`` prefixes, ``\\\\localhost\\C$`` shares, streams and trailing dots."""
+    raw = value.strip().strip("'\"")
+    if raw[:7].lower() == "file://":
+        raw = urllib.parse.unquote(raw[7:])
+        if raw[:10].lower() == "localhost/":
+            raw = raw[9:]
+        if os.name == "nt" and re.match(r"/[a-z]:", raw, re.I):
+            raw = raw[1:]
+    if os.name == "nt":
+        raw = _win_local_path(raw)
+    return os.path.expanduser(raw)
+
+
 def _abs_canon(value: str) -> str:
+    """Absolute, lower-case, forward-slash form of a path, without touching the disk."""
     try:
-        resolved = os.path.abspath(value.strip().strip("'\""))
+        resolved = os.path.abspath(_local_path(value))
     except (ValueError, OSError):
         return ""
     return posixpath.normpath(_normalize_command_text(resolved))
+
+
+def _real_canon(value: str) -> str:
+    """Like ``_abs_canon``, but also resolves symlinks, junctions and 8.3 short names."""
+    try:
+        resolved = os.path.realpath(_local_path(value))
+    except (ValueError, OSError):
+        return ""
+    return posixpath.normpath(_normalize_command_text(resolved))
+
+
+def _strip_sql_comments(text: str) -> str:
+    """Replace ``/* ... */`` and ``-- ...`` comments with a space, in linear time."""
+    out: list[str] = []
+    i = 0
+    block, line = text.find("/*"), text.find("--")
+    while block != -1 or line != -1:
+        if block != -1 and (line == -1 or block < line):
+            end = text.find("*/", block + 2)
+            if end == -1:
+                # Unclosed: no later "/*" can be closed either.
+                block = -1
+                continue
+            out += [text[i:block], " "]
+            i = end + 2
+        else:
+            end = text.find("\n", line + 2)
+            out += [text[i:line], " "]
+            i = len(text) if end == -1 else end
+        if block != -1 and block < i:
+            block = text.find("/*", i)
+        if line != -1 and line < i:
+            line = text.find("--", i)
+    out.append(text[i:])
+    return "".join(out)
 
 
 @functools.lru_cache(maxsize=8)
@@ -243,15 +321,22 @@ def _phrase_patterns(phrases: frozenset[str]) -> tuple[re.Pattern[str], ...]:
     )
 
 
-def _split_segments(text: str) -> list[tuple[list[str], list[str]]]:
-    """Split a shell-like command into (tokens, redirect_targets) segments."""
+def _split_segments(text: str, newlines: bool = True) -> list[tuple[list[str], list[str]]]:
+    """Split a shell-like command into (tokens, redirect_targets) segments.
+
+    With ``newlines`` a line break ends a segment, as in a script; without it, line
+    breaks are plain whitespace, which keeps continued lines (``\\``, backtick, a
+    trailing comma) in one command.
+    """
     try:
-        lexer = shlex.shlex(text, posix=True, punctuation_chars=True)
+        lexer = shlex.shlex(text, posix=True, punctuation_chars=_SHELL_PUNCTUATION if newlines else True)
+        if newlines:
+            lexer.whitespace = " \t\x0b\x0c"
         lexer.whitespace_split = True
         lexer.commenters = ""
         tokens = list(lexer)
     except ValueError:
-        tokens = _FALLBACK_TOKEN_RE.findall(text)
+        tokens = _FALLBACK_TOKEN_RE.findall(text if newlines else " ".join(text.split()))
 
     segments: list[tuple[list[str], list[str]]] = []
     current: list[str] = []
@@ -259,11 +344,11 @@ def _split_segments(text: str) -> list[tuple[list[str], list[str]]]:
     expect_redirect = False
     for tok in tokens:
         if tok and all(c in _PUNCT_CHARS for c in tok):
-            if ">" in tok:
-                expect_redirect = True
-            elif "<" not in tok:
+            if "\n" in tok or "\r" in tok or not ("<" in tok or ">" in tok):
                 segments.append((current, redirects))
                 current, redirects = [], []
+            # A redirect operator binds to the next word unless a line break follows it.
+            expect_redirect = ">" in tok.replace("\r", "\n").rsplit("\n", 1)[-1]
             continue
         if expect_redirect:
             redirects.append(tok)
@@ -382,6 +467,8 @@ class GovernanceKernel:
             refuse to start on a broken chain (LAW9-CHAIN)
         fsync_ledger: fsync every ledger append (durability over throughput)
         lock_timeout: Seconds to wait for the cross-process ledger lock
+        protected_roots: Extra directories whose whole tree is governance state
+            (LAW3-SUBORDINATE), e.g. the install directory of a host plugin
     """
 
     # Read-only tools: no approval needed and no payload scan, except that
@@ -443,6 +530,7 @@ class GovernanceKernel:
         verify_ledger_on_boot: bool = True,
         fsync_ledger: bool = False,
         lock_timeout: float = 30.0,
+        protected_roots: Iterable[str | Path] = (),
     ):
         self.manifest_path = Path(manifest_path)
         self.ledger_path = Path(ledger_path)
@@ -460,10 +548,20 @@ class GovernanceKernel:
         self._lock_depth = 0
         self._lock_fd: int | None = None
         self._protected_names: frozenset[str] = frozenset()
+        # Blank entries are skipped: canonicalising "" would protect the whole working directory.
+        # Both the spelled and the resolved form are kept, so either spelling of a path matches.
+        self._protected_roots = tuple(dict.fromkeys(
+            root
+            for p in protected_roots if str(p).strip()
+            for root in (_abs_canon(str(p)).rstrip("/"), _real_canon(str(p)).rstrip("/"))
+            if root
+        ))
         self._protected_exact = frozenset(
-            _abs_canon(str(p))
+            form
             for p in (self.manifest_path, self.ledger_path, self._lock_path, self.halt_file, self.operator_pubkey_path)
             if p is not None
+            for form in (_abs_canon(str(p)), _real_canon(str(p)))
+            if form
         )
 
         self.operator_pubkey = self._load_operator_pubkey()
@@ -568,7 +666,7 @@ class GovernanceKernel:
                     "LAW10-CHARTER",
                 )
             names.add(file_path.name.lower())
-            exact.add(_abs_canon(str(file_path)))
+            exact.update(form for form in (_abs_canon(str(file_path)), _real_canon(str(file_path))) if form)
 
         self._protected_names = frozenset(names)
         self._protected_exact = frozenset(exact)
@@ -678,7 +776,18 @@ class GovernanceKernel:
         if allow_suffix and base.endswith(self.PROTECTED_SUFFIXES):
             return True
         exact = getattr(self, "_protected_exact", frozenset())
-        return bool(exact) and _abs_canon(value) in exact
+        roots = getattr(self, "_protected_roots", ())
+        if not exact and not roots:
+            return False
+
+        def protected(absolute: str) -> bool:
+            return absolute in exact or any(absolute == r or absolute.startswith(r + "/") for r in roots)
+
+        if protected(_abs_canon(value)):
+            return True
+        # Explicit path arguments are also resolved on disk, so a symlink, junction or
+        # 8.3 short name that leads into governance state is caught too.
+        return allow_suffix and protected(_real_canon(value))
 
     def _mentions_protected(self, token: str) -> bool:
         t = token.strip("'\"")
@@ -699,21 +808,47 @@ class GovernanceKernel:
             return True
         if _FORK_BOMB in re.sub(r"\s+", "", norm):
             return True
-        if _SQL_DESTRUCTIVE_RE.search(_SQL_COMMENT_RE.sub(" ", norm)):
+        if _SQL_DESTRUCTIVE_RE.search(_strip_sql_comments(norm)):
             return True
         if any(p.search(norm) for p in _EXTRA_PROHIBITED_RES):
             return True
 
+        segments = _split_segments(norm)
+        if "\n" in norm or "\r" in norm:
+            # Also read it as one command, so continued lines are not split apart.
+            segments += _split_segments(norm, newlines=False)
+        # Long commands repeat tokens; each distinct token is checked once per command.
+        memo: dict[tuple[bool, str], bool] = {}
         return any(
-            self._segment_is_prohibited(tokens, redirects, depth)
-            for tokens, redirects in _split_segments(norm)
+            self._segment_is_prohibited(tokens, redirects, depth, memo)
+            for tokens, redirects in segments
         )
 
-    def _segment_is_prohibited(self, tokens: list[str], redirects: list[str], depth: int) -> bool:
-        if any(self._mentions_protected(t) for t in redirects):
+    def _segment_is_prohibited(
+        self,
+        tokens: list[str],
+        redirects: list[str],
+        depth: int,
+        memo: dict[tuple[bool, str], bool] | None = None,
+    ) -> bool:
+        memo = {} if memo is None else memo
+
+        def mentions_protected(token: str) -> bool:
+            hit = memo.get((False, token))
+            if hit is None:
+                hit = memo[(False, token)] = self._mentions_protected(token)
+            return hit
+
+        def nested_prohibited(token: str) -> bool:
+            hit = memo.get((True, token))
+            if hit is None:
+                hit = memo[(True, token)] = self._command_is_prohibited(token, depth + 1)
+            return hit
+
+        if any(mentions_protected(t) for t in redirects):
             return True
         for tok in tokens:
-            if any(c.isspace() for c in tok) and self._command_is_prohibited(tok, depth + 1):
+            if any(c.isspace() for c in tok) and nested_prohibited(tok):
                 return True
 
         idx, wrapped = _skip_wrappers(tokens)
@@ -726,7 +861,7 @@ class GovernanceKernel:
                 if _verb_name(tokens[i]) in _RULE_VERBS or _verb_name(tokens[i]).startswith("mkfs")
             ]
 
-        mentions = any(self._mentions_protected(t) for t in tokens)
+        mentions = any(mentions_protected(t) for t in tokens)
         for i in candidates:
             verb, args = _verb_name(tokens[i]), tokens[i + 1:]
             if self._verb_is_destructive(verb, args, depth):

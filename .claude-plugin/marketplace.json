@@ -1,0 +1,20 @@
+{
+  "name": "autonomous-governance-laws",
+  "owner": {
+    "name": "Kirk LaSalle",
+    "url": "https://github.com/kirklasalle"
+  },
+  "metadata": {
+    "description": "Autonomous Governance Laws (AGL): runtime governance for AI coding agents."
+  },
+  "plugins": [
+    {
+      "name": "autonomous-governance-laws",
+      "source": "./",
+      "description": "Runtime enforcement of the AGL charter: deny prohibited tool calls, require operator approval for elevated ones, hash-chained audit ledger, verified charter at session start.",
+      "version": "0.1.0",
+      "license": "Apache-2.0",
+      "homepage": "https://github.com/kirklasalle/AutonomousGovernanceLaws"
+    }
+  ]
+}

@@ -12,6 +12,7 @@ for Intelligence Systems. This module provides:
 - Append-only SHA-256 hash-chained event ledger (LAW9-LEDGER, LAW9-APPEND, LAW9-CHAIN)
 """
 
+import base64
 import contextlib
 import functools
 import hashlib
@@ -20,6 +21,7 @@ import os
 import posixpath
 import re
 import shlex
+import sqlite3
 import threading
 import time
 import unicodedata
@@ -431,6 +433,10 @@ class GovernanceViolation(Exception):
         super().__init__(f"[{law_ref}] {message}" if law_ref else message)
 
 
+class _PayloadTooDeep(Exception):
+    """Raised when a tool payload exceeds the maximum safe inspection nesting depth."""
+
+
 class ApprovalRequired(Exception):
     """Raised when an elevated-risk action requires a signed operator token.
 
@@ -455,12 +461,14 @@ class GovernanceKernel:
 
     Args:
         manifest_path: Path to config/charter_manifest.json
-        ledger_path: Path to the append-only JSONL event ledger
+        ledger_path: Path to the append-only JSONL event ledger (defaults to
+            ``<project_root>/.ledger/events.jsonl``)
         operator_pubkey_path: Optional path to the Ed25519 operator public key
             (64 hex chars or 32 raw bytes). A path that is given but missing or
             malformed fails the boot.
         require_attestation: If True, refuse to boot without an operator public key
-        halt_file: Path to the emergency halt trigger file
+        halt_file: Path to the emergency halt trigger file (defaults to
+            ``<project_root>/.halt``)
         project_root: Directory that relative charter paths resolve against.
             Defaults to the manifest's directory, or its parent for ``config/``.
         verify_ledger_on_boot: Verify the full ledger hash chain at boot and
@@ -469,20 +477,36 @@ class GovernanceKernel:
         lock_timeout: Seconds to wait for the cross-process ledger lock
         protected_roots: Extra directories whose whole tree is governance state
             (LAW3-SUBORDINATE), e.g. the install directory of a host plugin
+        manifest_sig_path: Optional path to detached Ed25519 signature over the
+            manifest (defaults to ``<manifest_path>.sig``)
+        require_manifest_signature: If True, refuse to boot unless a valid detached
+            manifest signature is present and verified against ``operator_pubkey``
+        require_v2_tokens: If True, accept only domain-scoped ``AGL-V2`` tokens
+        domain_scope: Optional explicit token/checkpoint domain scope string
     """
 
-    # Read-only tools: no approval needed and no payload scan, except that
-    # operator secret-key material may never be read.
+    # Read-only tools: no approval needed except that operator secret-key material
+    # may never be read.
     SAFE_TOOLS = frozenset({
         "read_file", "read", "view", "view_file", "open_file", "cat_file", "get_file",
         "list_dir", "list_directory", "list_files", "ls", "glob", "grep", "search",
         "search_files", "file_search", "find_files", "stat", "get_file_info",
     })
 
+    FILE_WRITE_TOOLS = frozenset({
+        "write_file", "create", "edit", "edit_file", "create_file", "str_replace_editor",
+        "apply_patch", "write", "multiedit", "notebookedit", "edit_notebook_file",
+        "insert_edit_into_file", "replace_string_in_file", "multi_replace_string_in_file",
+        "save_file", "update_file", "append_file",
+    })
+
+    PATTERN_KEYS = frozenset({"pattern", "query", "regex", "search", "filter"})
+
     # Governance state that agents may never modify (LAW3-SUBORDINATE)
     PROTECTED_DIRS = frozenset({".ledger", ".keys"})
     PROTECTED_BASENAMES = frozenset({
-        ".halt", "charter_manifest.json", "policy_registry.json", "policy_registry.sig",
+        ".halt", "charter_manifest.json", "charter_manifest.sig",
+        "policy_registry.json", "policy_registry.sig",
         "operator.pub", "operator.key", "operator.dpapi.key",
     })
     PROTECTED_FRAGMENTS = frozenset({
@@ -514,33 +538,43 @@ class GovernanceKernel:
     # Payload keys that carry data rather than commands or paths
     CONTENT_KEYS = frozenset({
         "content", "contents", "text", "body", "file_text", "new_str", "old_str",
-        "new_string", "old_string", "message", "description", "comment", "title",
-        "summary", "notes",
+        "new_string", "old_string", "new_source", "message", "description", "comment",
+        "title", "summary", "notes",
     })
     PATH_KEY_HINTS = ("path", "file", "dir", "dest", "target", "source", "src", "cwd", "uri")
 
     def __init__(
         self,
         manifest_path: str | Path = "config/charter_manifest.json",
-        ledger_path: str | Path = ".ledger/events.jsonl",
+        ledger_path: str | Path | None = None,
         operator_pubkey_path: str | Path | None = None,
         require_attestation: bool = False,
-        halt_file: str | Path = ".halt",
+        halt_file: str | Path | None = None,
         project_root: str | Path | None = None,
         verify_ledger_on_boot: bool = True,
         fsync_ledger: bool = False,
         lock_timeout: float = 30.0,
         protected_roots: Iterable[str | Path] = (),
+        manifest_sig_path: str | Path | None = None,
+        require_manifest_signature: bool = False,
+        require_v2_tokens: bool = False,
+        domain_scope: str | None = None,
     ):
         self.manifest_path = Path(manifest_path)
-        self.ledger_path = Path(ledger_path)
+        self.project_root = resolve_project_root(self.manifest_path, project_root)
+        self.ledger_path = Path(ledger_path) if ledger_path is not None else self.project_root / ".ledger" / "events.jsonl"
         self.operator_pubkey_path = Path(operator_pubkey_path) if operator_pubkey_path else None
         self.require_attestation = require_attestation
-        self.halt_file = Path(halt_file)
-        self.project_root = resolve_project_root(self.manifest_path, project_root)
+        self.halt_file = Path(halt_file) if halt_file is not None else self.project_root / ".halt"
         self.verify_ledger_on_boot = verify_ledger_on_boot
         self.fsync_ledger = fsync_ledger
         self.lock_timeout = lock_timeout
+        self.manifest_sig_path = (
+            Path(manifest_sig_path) if manifest_sig_path is not None else self.manifest_path.with_suffix(".sig")
+        )
+        self.require_manifest_signature = require_manifest_signature
+        self.require_v2_tokens = require_v2_tokens
+        self._explicit_domain_scope = domain_scope
         self.prev_event_hash = GENESIS_HASH
         self._boot_time = time.time()
         self._used_action_ids: set[str] = set()
@@ -556,9 +590,20 @@ class GovernanceKernel:
             for root in (_abs_canon(str(p)).rstrip("/"), _real_canon(str(p)).rstrip("/"))
             if root
         ))
+        replay_db = self._replay_db_path
         self._protected_exact = frozenset(
             form
-            for p in (self.manifest_path, self.ledger_path, self._lock_path, self.halt_file, self.operator_pubkey_path)
+            for p in (
+                self.manifest_path,
+                self.manifest_sig_path,
+                self.ledger_path,
+                self._lock_path,
+                replay_db,
+                replay_db.with_name(replay_db.name + "-wal"),
+                replay_db.with_name(replay_db.name + "-shm"),
+                self.halt_file,
+                self.operator_pubkey_path,
+            )
             if p is not None
             for form in (_abs_canon(str(p)), _real_canon(str(p)))
             if form
@@ -568,8 +613,12 @@ class GovernanceKernel:
 
         # Boot sequence
         self._verify_charter_integrity()
+        self.domain_scope = self._explicit_domain_scope or hashlib.sha256(
+            f"{self.project_root}:{self._manifest_sha256}".encode("utf-8")
+        ).hexdigest()[:32]
         with self._ledger_lock():
             self._init_ledger()
+            self._init_replay_store()
             if self.verify_ledger_on_boot:
                 report = self.audit_ledger()
                 if not report["valid"]:
@@ -583,6 +632,7 @@ class GovernanceKernel:
                 "charter_files_verified": self._charter_file_count,
                 "attestation_enforced": self.require_attestation,
                 "operator_pubkey_loaded": self.operator_pubkey is not None,
+                "manifest_signature_verified": self._manifest_sig_verified,
             }, "LAW10-CHARTER")
 
     # ------------------------------------------------------------------
@@ -603,20 +653,27 @@ class GovernanceKernel:
             raise GovernanceViolation(f"Operator public key not found: {path}", "LAW10-APPROVAL")
         raw = path.read_bytes()
         if len(raw) == 32:
-            return raw
-        try:
-            key = bytes.fromhex(raw.decode("ascii").strip())
-        except (UnicodeDecodeError, ValueError):
-            key = b""
+            key = raw
+        else:
+            try:
+                key = bytes.fromhex(raw.decode("ascii").strip())
+            except (UnicodeDecodeError, ValueError):
+                key = b""
         if len(key) != 32:
             raise GovernanceViolation(
                 f"Operator public key is malformed (expected 64 hex chars or 32 raw bytes): {path}",
                 "LAW10-APPROVAL",
             )
+        from autonomous_governance.security import is_small_order_point
+        if is_small_order_point(key):
+            raise GovernanceViolation(
+                f"Operator public key is a disallowed small-order or invalid curve point: {path}",
+                "LAW10-APPROVAL",
+            )
         return key
 
     def _verify_charter_integrity(self) -> None:
-        """Verify SHA-256 digests of all charter documents at boot.
+        """Verify SHA-256 digests of all charter documents and optional manifest signature at boot.
 
         Implements: LAW10-CHARTER
         Failure: Unrecoverable — runtime MUST NOT proceed.
@@ -644,7 +701,31 @@ class GovernanceKernel:
             )
 
         self._manifest_version = manifest.get("version", "unknown")
+        self._manifest_sha256 = sha256_lf(self.manifest_path)
         self._charter_file_count = len(charter_files)
+        self._manifest_sig_verified = False
+
+        if self.require_manifest_signature and (self.operator_pubkey is None or not self.manifest_sig_path.is_file()):
+            raise GovernanceViolation(
+                f"Detached manifest signature required ({self.manifest_sig_path}) with pinned operator public key",
+                "LAW10-CHARTER",
+            )
+        if self.manifest_sig_path.is_file() and self.operator_pubkey is not None:
+            from autonomous_governance.security import verify_manifest_signature
+            try:
+                sig_hex = self.manifest_sig_path.read_text(encoding="utf-8").strip()
+            except OSError as exc:
+                raise GovernanceViolation(
+                    f"Manifest signature unreadable: {self.manifest_sig_path} ({exc})",
+                    "LAW10-CHARTER",
+                ) from exc
+            ok, reason = verify_manifest_signature(self.manifest_path, sig_hex, self.operator_pubkey)
+            if not ok:
+                raise GovernanceViolation(
+                    f"Charter manifest signature invalid ({self.manifest_sig_path}): {reason}",
+                    "LAW10-CHARTER",
+                )
+            self._manifest_sig_verified = True
 
         names: set[str] = set()
         exact = set(self._protected_exact)
@@ -699,11 +780,14 @@ class GovernanceKernel:
             PolicyTier indicating the risk classification
         """
         name = str(tool_name or "").strip().lower()
-        values = list(self._iter_payload_values(payload))
+        try:
+            values = list(self._iter_payload_values(payload, skip_content=(name in self.FILE_WRITE_TOOLS)))
+        except _PayloadTooDeep:
+            return PolicyTier.PROHIBITED
 
         if name in self.SAFE_TOOLS:
             for key, value, joined in values:
-                if not joined and self._is_path_key(key) and self._is_secret_path(value):
+                if not joined and key not in self.PATTERN_KEYS and self._is_secret_path(value):
                     return PolicyTier.PROHIBITED
             return PolicyTier.SAFE
 
@@ -720,20 +804,20 @@ class GovernanceKernel:
         return PolicyTier.ELEVATED
 
     def _iter_payload_values(
-        self, value: Any, key: str = "", depth: int = 0
+        self, value: Any, key: str = "", depth: int = 0, skip_content: bool = True
     ) -> Iterator[tuple[str, str, bool]]:
         """Yield (key, string, is_joined_list) for every non-content string in a payload."""
         if depth > 16:
-            return
+            raise _PayloadTooDeep("Payload nesting exceeds maximum inspection depth")
         if isinstance(value, dict):
             for k, v in value.items():
                 k_norm = str(k).lower()
-                if k_norm not in self.CONTENT_KEYS:
-                    yield from self._iter_payload_values(v, k_norm, depth + 1)
+                if not (skip_content and k_norm in self.CONTENT_KEYS):
+                    yield from self._iter_payload_values(v, k_norm, depth + 1, skip_content=skip_content)
         elif isinstance(value, (list, tuple)):
             items = list(value)
             for item in items:
-                yield from self._iter_payload_values(item, key, depth + 1)
+                yield from self._iter_payload_values(item, key, depth + 1, skip_content=skip_content)
             if len(items) > 1 and all(isinstance(i, str) for i in items):
                 yield key, shlex.join(items), True
         elif isinstance(value, str) and value.strip():
@@ -749,16 +833,22 @@ class GovernanceKernel:
         return canon, [_clean_component(p) for p in canon.split("/") if p]
 
     def _is_secret_path(self, value: str) -> bool:
-        parsed = self._path_parts(value)
-        if parsed is None:
-            return False
-        canon, parts = parsed
-        base = parts[-1] if parts else ""
-        return (
-            ".keys" in parts
-            or base in self.SECRET_BASENAMES
-            or any(f in canon for f in self.SECRET_FRAGMENTS)
-        )
+        for candidate in (value, _real_canon(value)):
+            if not candidate:
+                continue
+            parsed = self._path_parts(candidate)
+            if parsed is None:
+                continue
+            canon, parts = parsed
+            base = parts[-1] if parts else ""
+            if (
+                ".keys" in parts
+                or base in self.SECRET_BASENAMES
+                or base.endswith(".pem")
+                or any(f in canon for f in self.SECRET_FRAGMENTS)
+            ):
+                return True
+        return False
 
     def _is_protected_path(self, value: str, allow_suffix: bool = False) -> bool:
         """True if ``value`` names governance state the agent may not touch (LAW3-SUBORDINATE)."""
@@ -801,7 +891,26 @@ class GovernanceKernel:
         """True if ``text`` contains a destructive command or mutates governance state."""
         if depth > 3 or not text or not text.strip():
             return False
-        norm = _normalize_command_text(text)
+        raw_nfkc = _ZERO_WIDTH_RE.sub("", unicodedata.normalize("NFKC", text))
+        for m in re.finditer(
+            r"(?i)(?:^|[\s;|&])(?:powershell|pwsh)(?:\.exe)?\b[^\r\n;|&]*?\s"
+            r"-(?:e|ec|en|enc|enco|encod|encode|encoded|encodedc|encodedco|encodedcom|encodedcomm|encodedcomma|encodedcomman|encodedcommand)"
+            r"\s+['\"]?([A-Za-z0-9+/=]{8,})",
+            raw_nfkc,
+        ):
+            b64_tok = m.group(1)
+            try:
+                raw_bytes = base64.b64decode(b64_tok + "=" * (-len(b64_tok) % 4), validate=False)
+            except Exception:
+                raw_bytes = b""
+            if raw_bytes:
+                decoded = raw_bytes.decode("utf-16-le", errors="ignore")
+                if "\x00" in decoded or not decoded.strip():
+                    decoded = raw_bytes.decode("utf-8", errors="ignore")
+                if decoded and self._command_is_prohibited(decoded, depth + 1):
+                    return True
+
+        norm = raw_nfkc.lower().replace("\\", "/")
         collapsed = " ".join(norm.split())
 
         if any(p.search(collapsed) for p in _phrase_patterns(frozenset(self.PROHIBITED_COMMANDS))):
@@ -879,7 +988,10 @@ class GovernanceKernel:
         if verb.startswith("mkfs") or verb in _DISK_VERBS:
             return True
         if verb == "dd":
-            return any(a.startswith("of=/dev/") for a in args)
+            return any(
+                a.startswith(("of=/dev/", "of=//./physicaldrive", "of=//?/physicaldrive"))
+                for a in args
+            )
         if verb in ("format", "format.com"):
             return any(_DRIVE_RE.fullmatch(a) for a in args)
         if verb in _POWER_VERBS:
@@ -915,8 +1027,18 @@ class GovernanceKernel:
             return True
         if verb == "sed" and any(a.startswith("-i") or a == "--in-place" for a in args):
             return True
-        if verb == "git" and any(a in _GIT_MUTATING for a in args[:4]):
-            return True
+        if verb == "git":
+            skip_next = False
+            for a in args:
+                if skip_next:
+                    skip_next = False
+                    continue
+                if a in ("-c", "-C", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--config-env"):
+                    skip_next = True
+                    continue
+                if a.startswith("-"):
+                    continue
+                return a in _GIT_MUTATING
         return False
 
     def check_halt(self) -> bool:
@@ -1072,6 +1194,8 @@ class GovernanceKernel:
             tool_name=tool_name,
             payload=payload,
             expected_operator_pubkey=self.operator_pubkey,
+            expected_scope=getattr(self, "domain_scope", None),
+            require_v2=getattr(self, "require_v2_tokens", False),
         )
 
         if not is_valid:
@@ -1083,7 +1207,7 @@ class GovernanceKernel:
             return False
 
         with self._ledger_lock():
-            if action_id in self._used_action_ids or self._ledger_has_grant(action_id):
+            if not self._record_or_reject_replay(action_id, int(token["expires_at"])):
                 self._log_event(
                     "TOKEN_REPLAY_DETECTED",
                     {"action_id": action_id, "tool": tool_name},
@@ -1091,7 +1215,6 @@ class GovernanceKernel:
                 )
                 return False
 
-            self._used_action_ids.add(action_id)
             self._log_event(
                 "APPROVAL_GRANTED",
                 {
@@ -1112,6 +1235,81 @@ class GovernanceKernel:
     def _lock_path(self) -> Path:
         return self.ledger_path.with_name(self.ledger_path.name + ".lock")
 
+    @property
+    def _replay_db_path(self) -> Path:
+        return self.ledger_path.with_name(self.ledger_path.name + ".replay.db")
+
+    def _init_replay_store(self) -> None:
+        """Initialize the persistent SQLite replay store, seeding from existing ledger on first creation."""
+        db_path = self._replay_db_path
+        first_create = not db_path.exists()
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(db_path), timeout=max(1.0, self.lock_timeout))
+        try:
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA synchronous=NORMAL")
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS consumed_actions ("
+                "action_id TEXT PRIMARY KEY, "
+                "expires_at INTEGER NOT NULL, "
+                "granted_at INTEGER NOT NULL)"
+            )
+            if first_create and self.ledger_path.exists():
+                now = int(time.time())
+                rows: list[tuple[str, int, int]] = []
+                with open(self.ledger_path, "rb") as f:
+                    for line in f:
+                        if b'"APPROVAL_GRANTED"' not in line:
+                            continue
+                        try:
+                            event = json.loads(line)
+                        except ValueError:
+                            continue
+                        data = event.get("data") if isinstance(event, dict) else None
+                        if (
+                            isinstance(event, dict)
+                            and event.get("event_type") == "APPROVAL_GRANTED"
+                            and isinstance(data, dict)
+                            and isinstance(data.get("action_id"), str)
+                        ):
+                            rows.append((data["action_id"], now + 86400, now))
+                if rows:
+                    conn.executemany(
+                        "INSERT OR IGNORE INTO consumed_actions(action_id, expires_at, granted_at) VALUES (?, ?, ?)",
+                        rows,
+                    )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _record_or_reject_replay(self, action_id: str, expires_at: int) -> bool:
+        """Atomically record ``action_id`` in the replay store; return False if already consumed."""
+        if action_id in self._used_action_ids:
+            return False
+        db_path = getattr(self, "_replay_db_path", None)
+        if db_path is not None:
+            now = int(time.time())
+            conn = sqlite3.connect(str(db_path), timeout=max(1.0, getattr(self, "lock_timeout", 30.0)))
+            try:
+                conn.execute(
+                    "CREATE TABLE IF NOT EXISTS consumed_actions ("
+                    "action_id TEXT PRIMARY KEY, expires_at INTEGER NOT NULL, granted_at INTEGER NOT NULL)"
+                )
+                conn.execute("DELETE FROM consumed_actions WHERE expires_at < ?", (now - 3600,))
+                conn.execute(
+                    "INSERT INTO consumed_actions(action_id, expires_at, granted_at) VALUES (?, ?, ?)",
+                    (action_id, expires_at, now),
+                )
+                conn.commit()
+            except sqlite3.IntegrityError:
+                return False
+            finally:
+                conn.close()
+        elif self._ledger_has_grant(action_id):
+            return False
+        self._used_action_ids.add(action_id)
+        return True
+
     @contextlib.contextmanager
     def _ledger_lock(self) -> Iterator[None]:
         """Re-entrant lock held across threads (RLock) and processes (OS file lock)."""
@@ -1130,33 +1328,30 @@ class GovernanceKernel:
                     if fd is not None:
                         _release_file_lock(fd)
 
-    def _read_tail(self) -> tuple[str, bool]:
-        """Return (last event_hash, file ends without newline) by reading the ledger backwards."""
-        try:
-            size = self.ledger_path.stat().st_size
-        except FileNotFoundError:
-            return GENESIS_HASH, False
+    def _read_tail_from_fh(self, f: Any) -> tuple[str, bool]:
+        """Return (last event_hash, file ends without newline) from an open binary file handle."""
+        f.seek(0, os.SEEK_END)
+        size = f.tell()
         if size == 0:
             return GENESIS_HASH, False
 
-        with open(self.ledger_path, "rb") as f:
-            f.seek(size - 1)
-            missing_newline = f.read(1) != b"\n"
-            buf = b""
-            end = size
-            last: bytes | None = None
-            while end > 0:
-                start = max(0, end - 4096)
-                f.seek(start)
-                buf = f.read(end - start) + buf
-                end = start
-                stripped = buf.rstrip(b"\r\n \t")
-                if not stripped:
-                    continue
-                nl = stripped.rfind(b"\n")
-                if nl != -1 or end == 0:
-                    last = stripped[nl + 1:].strip()
-                    break
+        f.seek(size - 1)
+        missing_newline = f.read(1) != b"\n"
+        buf = b""
+        end = size
+        last: bytes | None = None
+        while end > 0:
+            start = max(0, end - 4096)
+            f.seek(start)
+            buf = f.read(end - start) + buf
+            end = start
+            stripped = buf.rstrip(b"\r\n \t")
+            if not stripped:
+                continue
+            nl = stripped.rfind(b"\n")
+            if nl != -1 or end == 0:
+                last = stripped[nl + 1:].strip()
+                break
 
         if last is None:
             return GENESIS_HASH, missing_newline
@@ -1171,6 +1366,14 @@ class GovernanceKernel:
                 "LAW9-CHAIN",
             )
         return tail_hash, missing_newline
+
+    def _read_tail(self) -> tuple[str, bool]:
+        """Return (last event_hash, file ends without newline) by reading the ledger backwards."""
+        try:
+            with open(self.ledger_path, "rb") as f:
+                return self._read_tail_from_fh(f)
+        except FileNotFoundError:
+            return GENESIS_HASH, False
 
     def _ledger_has_grant(self, action_id: str) -> bool:
         """True if the ledger already records an APPROVAL_GRANTED for ``action_id``."""
@@ -1201,33 +1404,34 @@ class GovernanceKernel:
 
         The chain resumes from the last event on disk, under a lock shared by
         threads and processes, so restarts and concurrent writers never fork it.
-        Each event includes a UTC timestamp, the event type and law reference,
-        the data payload, the previous event's hash, and its own SHA-256 hash.
+        Uses a single file handle per append to minimize OS open/close overhead.
 
         Returns:
             The new event's hash
         """
         with self._ledger_lock():
-            prev_hash, missing_newline = self._read_tail()
-            event = {
-                "timestamp": time.time(),
-                "timestamp_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                "event_type": event_type,
-                "law_ref": law_ref,
-                "data": data,
-                "prev_event_hash": prev_hash,
-            }
+            self.ledger_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.ledger_path, "a+b") as f:
+                prev_hash, missing_newline = self._read_tail_from_fh(f)
+                event = {
+                    "timestamp": time.time(),
+                    "timestamp_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "event_type": event_type,
+                    "law_ref": law_ref,
+                    "data": data,
+                    "prev_event_hash": prev_hash,
+                }
 
-            # Compute hash chain link
-            event_bytes = json.dumps(event, sort_keys=True).encode("utf-8")
-            current_hash = hashlib.sha256(event_bytes).hexdigest()
-            event["event_hash"] = current_hash
+                # Compute hash chain link
+                event_bytes = json.dumps(event, sort_keys=True).encode("utf-8")
+                current_hash = hashlib.sha256(event_bytes).hexdigest()
+                event["event_hash"] = current_hash
 
-            # Append to ledger (immutable — never overwrite or delete)
-            line = json.dumps(event).encode("utf-8") + b"\n"
-            if missing_newline:
-                line = b"\n" + line
-            with open(self.ledger_path, "ab") as f:
+                # Append to ledger (immutable — never overwrite or delete)
+                line = json.dumps(event).encode("utf-8") + b"\n"
+                if missing_newline:
+                    line = b"\n" + line
+                f.seek(0, os.SEEK_END)
                 f.write(line)
                 f.flush()
                 if getattr(self, "fsync_ledger", False):
@@ -1241,8 +1445,9 @@ class GovernanceKernel:
         Walks the entire ledger and verifies that:
         1. Each event's hash matches its computed hash
         2. Each event's prev_event_hash matches the prior event's hash
-        This detects internal deletion, reordering and edits, but not tail
-        truncation or a complete rewrite with recomputed hashes.
+        This detects internal deletion, reordering and edits. Pair with
+        ``create_checkpoint`` / ``verify_checkpoint`` to detect tail truncation
+        or wholesale chain replacement.
 
         Returns:
             Dict with 'valid', 'total_events', 'broken_links', 'errors'
@@ -1304,6 +1509,52 @@ class GovernanceKernel:
             "broken_links": broken_links,
             "errors": errors,
         }
+
+    def create_checkpoint(self, private_seed: bytes) -> dict[str, Any]:
+        """Verify the ledger and return a signed checkpoint binding event_count and head_hash."""
+        from autonomous_governance.security import sign_ledger_checkpoint
+
+        with self._ledger_lock():
+            report = self.audit_ledger()
+            if not report["valid"]:
+                raise GovernanceViolation(
+                    f"Cannot checkpoint broken ledger ({report['broken_links']} broken link(s))",
+                    "LAW9-CHAIN",
+                )
+            head_hash, _ = self._read_tail()
+            return sign_ledger_checkpoint(
+                event_count=report["total_events"],
+                head_hash=head_hash,
+                private_seed=private_seed,
+                scope=getattr(self, "domain_scope", ""),
+            )
+
+    def verify_checkpoint(self, checkpoint: dict[str, Any]) -> tuple[bool, str]:
+        """Verify the ledger against a signed checkpoint (detecting tail truncation/rewrites)."""
+        from autonomous_governance.security import verify_ledger_checkpoint
+
+        if self.operator_pubkey is None:
+            return False, "No pinned operator public key configured"
+        ok, reason = verify_ledger_checkpoint(
+            checkpoint,
+            self.operator_pubkey,
+            expected_scope=getattr(self, "domain_scope", None),
+        )
+        if not ok:
+            return False, reason
+        with self._ledger_lock():
+            report = self.audit_ledger()
+            if not report["valid"]:
+                return False, f"Ledger hash chain broken ({report['broken_links']} broken link(s))"
+            head_hash, _ = self._read_tail()
+        if report["total_events"] != checkpoint["event_count"]:
+            return False, (
+                f"Ledger event count mismatch (ledger={report['total_events']}, "
+                f"checkpoint={checkpoint['event_count']}) — possible tail truncation"
+            )
+        if head_hash != checkpoint["head_hash"]:
+            return False, "Ledger head hash mismatch — possible rewrite or truncation"
+        return True, "Ledger matches signed checkpoint"
 
     @staticmethod
     def _compute_sha256(file_path: Path) -> str:

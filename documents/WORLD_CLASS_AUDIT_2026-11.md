@@ -12,7 +12,7 @@
 | **Supersedes** | All health scores and market figures in documents dated before 2026-11-01 |
 | **Companion** | [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md): charter-copy vs. plugin installation analysis (adds P18, P19) |
 | **Re-assessed** | 2026-11-02 after the remediation commits: composite **58.5 / 100** (§1a) |
-| **Fresh verification** | [AUDIT_VERIFICATION_2026-11.md](AUDIT_VERIFICATION_2026-11.md): 213 tests collected; 83.13% line / 77.44% branch coverage on Windows Python 3.10; actual artifact checks; four additional implementation fixes. [Persistent evidence](audit/evidence-2026-11.json). |
+| **Fresh verification** | [AUDIT_VERIFICATION_2026-11.md](AUDIT_VERIFICATION_2026-11.md): 213 tests collected; 83.13% line / 77.44% branch coverage on Windows Python 3.10; actual artifact checks; four additional implementation fixes. [Persistent evidence](../audit/evidence-2026-11.json). |
 
 > **Reading this report:** §1 and §§2–8 preserve the original baseline unless
 > explicitly marked otherwise. §1a is the earlier author's reassessment.
@@ -56,7 +56,7 @@ Same rubric and weights as §1. Evidence comes from:
 - 79% line coverage on Linux, Python 3.14 (`hooks.py` 97%, `kernel.py` 87%, `cli.py` 39%);
 - `laws-lint` clean;
 - a live Copilot CLI 0.0.410 session with the plugin ([INSTALLATION_METHODS_REPORT.md](INSTALLATION_METHODS_REPORT.md) §4.5);
-- an independent code review of the plugin. All five of its findings were reproduced, then fixed with regression tests ([CHANGELOG](CHANGELOG.md), "Code-review fixes").
+- an independent code review of the plugin. All five of its findings were reproduced, then fixed with regression tests ([CHANGELOG](../CHANGELOG.md), "Code-review fixes").
 
 | Finding | Status |
 |---|---|
@@ -130,15 +130,15 @@ Findings marked *probe* in §4 were observed directly. The P6 evasion set and P1
 
 | Module | LOC | Coverage | SHA-256 (prefix) | Role |
 |---|---:|---:|---|---|
-| [`kernel.py`](src/autonomous_governance/kernel.py) | 475 | 87% | `a9960190b42b6187` | Charter verification, 3-tier classifier, interceptor, ledger |
-| [`security.py`](src/autonomous_governance/security.py) | 451 | 60% | `7f6dd55fae264312` | Ed25519 (pure-Python + `cryptography`), DPAPI keystore, AGL-V1 tokens |
-| [`cli.py`](src/autonomous_governance/cli.py) | 310 | **0%** | `b4bed06aabd7049b` | `agy-governance` CLI |
-| [`badge.py`](src/autonomous_governance/badge.py) | 226 | 69% | `080f11b67b3fda90` | Compliance badge (SVG / JSON / Markdown) |
-| [`linter.py`](src/autonomous_governance/linter.py) | 202 | 55% | `d03a611a21bdc8b9` | `laws-lint` static scanner |
-| [`__init__.py`](src/autonomous_governance/__init__.py) | 60 | — | `e5f876c392547e02` | Public API |
+| [`kernel.py`](../src/autonomous_governance/kernel.py) | 475 | 87% | `a9960190b42b6187` | Charter verification, 3-tier classifier, interceptor, ledger |
+| [`security.py`](../src/autonomous_governance/security.py) | 451 | 60% | `7f6dd55fae264312` | Ed25519 (pure-Python + `cryptography`), DPAPI keystore, AGL-V1 tokens |
+| [`cli.py`](../src/autonomous_governance/cli.py) | 310 | **0%** | `b4bed06aabd7049b` | `agy-governance` CLI |
+| [`badge.py`](../src/autonomous_governance/badge.py) | 226 | 69% | `080f11b67b3fda90` | Compliance badge (SVG / JSON / Markdown) |
+| [`linter.py`](../src/autonomous_governance/linter.py) | 202 | 55% | `d03a611a21bdc8b9` | `laws-lint` static scanner |
+| [`__init__.py`](../src/autonomous_governance/__init__.py) | 60 | — | `e5f876c392547e02` | Public API |
 | `tests/` (4 files, 22 tests) | 614 | — | — | Kernel 8 (incl. repo-charter check), security 5, linter 6, badge 3 |
 
-Charter: [`config/charter_manifest.json`](config/charter_manifest.json) pins [`Permanent_Active_Directives.txt`](Permanent_Active_Directives.txt), [`AGENTIC_PRIME_DIRECTIVE.md`](AGENTIC_PRIME_DIRECTIVE.md), and [`AGENTIC_SACRED_COVENANT.md`](AGENTIC_SACRED_COVENANT.md) with LF-normalised SHA-256. Verified intact; **these files were not modified by this audit.**
+Charter: [`config/charter_manifest.json`](../config/charter_manifest.json) pins [`Permanent_Active_Directives.txt`](../Permanent_Active_Directives.txt), [`AGENTIC_PRIME_DIRECTIVE.md`](../AGENTIC_PRIME_DIRECTIVE.md), and [`AGENTIC_SACRED_COVENANT.md`](../AGENTIC_SACRED_COVENANT.md) with LF-normalised SHA-256. Verified intact; **these files were not modified by this audit.**
 
 ---
 
@@ -150,18 +150,18 @@ Severity follows CVSS-style impact × exploitability in AGL's stated threat mode
 
 | ID | Finding | Location | Evidence | Remediation |
 |---|---|---|---|---|
-| **P1** | **Legacy token bypass.** With no pinned operator key (the default, `require_attestation=False`), any dict of the form `{"action_id": <new>, "signature": <anything>}` is accepted as operator approval for any ELEVATED action. | [`security.py`](src/autonomous_governance/security.py) 392-397; default at [`kernel.py`](src/autonomous_governance/kernel.py) 103 | *Probe*: `write_file` and `execute_terminal` executed with `"signature": "anything"`. [`test_risk001_elevated_approval_required`](tests/test_kernel.py) (line 127) **asserts this behaviour as correct**. | Delete the legacy path. Refuse every ELEVATED action unless an operator key is pinned. Make `require_attestation=True` the default. Rewrite the test to use a real AGL-V1 token. |
-| **P2** | **Self-signed token acceptance.** With no pinned key, `verify_approval_token` trusts the `operator_pubkey` *embedded in the token*, so an agent can mint its own keypair and approve itself. This violates LAW10 ("non-self-clearing gates"). | [`security.py`](src/autonomous_governance/security.py) 423-430 | *Probe*: an agent-generated keypair signed a valid AGL-V1 token, which was accepted. | Never trust key material carried in the token. Fail closed when `expected_operator_pubkey is None`. |
+| **P1** | **Legacy token bypass.** With no pinned operator key (the default, `require_attestation=False`), any dict of the form `{"action_id": <new>, "signature": <anything>}` is accepted as operator approval for any ELEVATED action. | [`security.py`](../src/autonomous_governance/security.py) 392-397; default at [`kernel.py`](../src/autonomous_governance/kernel.py) 103 | *Probe*: `write_file` and `execute_terminal` executed with `"signature": "anything"`. [`test_risk001_elevated_approval_required`](../tests/test_kernel.py) (line 127) **asserts this behaviour as correct**. | Delete the legacy path. Refuse every ELEVATED action unless an operator key is pinned. Make `require_attestation=True` the default. Rewrite the test to use a real AGL-V1 token. |
+| **P2** | **Self-signed token acceptance.** With no pinned key, `verify_approval_token` trusts the `operator_pubkey` *embedded in the token*, so an agent can mint its own keypair and approve itself. This violates LAW10 ("non-self-clearing gates"). | [`security.py`](../src/autonomous_governance/security.py) 423-430 | *Probe*: an agent-generated keypair signed a valid AGL-V1 token, which was accepted. | Never trust key material carried in the token. Fail closed when `expected_operator_pubkey is None`. |
 
 ### 4.2 High
 
 | ID | Finding | Location | Evidence | Remediation |
 |---|---|---|---|---|
-| **P4** | **Ledger chain resets on every boot.** `prev_event_hash` is initialised to 64 zeros instead of the last ledger hash, so the second process to write to a ledger breaks the chain. | [`kernel.py`](src/autonomous_governance/kernel.py) 111 | *Probe*: boot → 3 events → boot → 3 events → `audit_ledger()` reports `valid: False`. | In `_init_ledger`, read the final line's `event_hash` and verify the full chain at boot. |
-| **P5** | **Ledger is not thread- or process-safe.** No lock around hash computation and append. | [`kernel.py`](src/autonomous_governance/kernel.py) 371-400 | *Probe*: 8 threads × 100 calls → 786 of 801 events written, **609 broken links**. | Add a `threading.Lock` plus an OS file lock (`msvcrt.locking` / `fcntl.flock`), with optional `fsync`. |
-| **P6** | **Classifier is substring-based and default-allow.** Only `payload["command"]` and `payload["target_path"]` are inspected; unknown tools are classified SAFE. Combined with P1, every evasion that lands in ELEVATED is executable with a fake token. | [`kernel.py`](src/autonomous_governance/kernel.py) 186-217 | *Probe*: six evasion variants were classified ELEVATED instead of PROHIBITED, one remote-script pipe was classified SAFE, and one benign read was a false positive (exact strings in the block below this table). | Default-deny or default-ELEVATED for unknown tools. Normalise with `shlex` and match on tokens. Inspect all string values. Canonicalise paths (`Path.resolve`). Externalise policy (OPA/Cedar/YAML). |
-| **P15** | **Key storage fails open.** If DPAPI decryption fails, `load_key` silently returns the raw file bytes. The non-Windows path writes keys unencrypted, and `chmod 0600` failures are swallowed. | [`security.py`](src/autonomous_governance/security.py) 279-301 | Code review; DPAPI round-trip test covers only the happy path. | Raise on decryption failure. Use OS keyring / `age` / PKCS#11 off Windows. Make the permission failure fatal. |
-| **P3** | **Replay protection is in-memory only.** Consumed `action_id`s are lost on restart, so an unexpired token can be replayed. | [`kernel.py`](src/autonomous_governance/kernel.py) 113, 342-368 | *Probe*: the same token was accepted in two consecutive kernel instances. | Rebuild the consumed set from the ledger at boot, or persist it (SQLite). Keep token TTLs short. |
+| **P4** | **Ledger chain resets on every boot.** `prev_event_hash` is initialised to 64 zeros instead of the last ledger hash, so the second process to write to a ledger breaks the chain. | [`kernel.py`](../src/autonomous_governance/kernel.py) 111 | *Probe*: boot → 3 events → boot → 3 events → `audit_ledger()` reports `valid: False`. | In `_init_ledger`, read the final line's `event_hash` and verify the full chain at boot. |
+| **P5** | **Ledger is not thread- or process-safe.** No lock around hash computation and append. | [`kernel.py`](../src/autonomous_governance/kernel.py) 371-400 | *Probe*: 8 threads × 100 calls → 786 of 801 events written, **609 broken links**. | Add a `threading.Lock` plus an OS file lock (`msvcrt.locking` / `fcntl.flock`), with optional `fsync`. |
+| **P6** | **Classifier is substring-based and default-allow.** Only `payload["command"]` and `payload["target_path"]` are inspected; unknown tools are classified SAFE. Combined with P1, every evasion that lands in ELEVATED is executable with a fake token. | [`kernel.py`](../src/autonomous_governance/kernel.py) 186-217 | *Probe*: six evasion variants were classified ELEVATED instead of PROHIBITED, one remote-script pipe was classified SAFE, and one benign read was a false positive (exact strings in the block below this table). | Default-deny or default-ELEVATED for unknown tools. Normalise with `shlex` and match on tokens. Inspect all string values. Canonicalise paths (`Path.resolve`). Externalise policy (OPA/Cedar/YAML). |
+| **P15** | **Key storage fails open.** If DPAPI decryption fails, `load_key` silently returns the raw file bytes. The non-Windows path writes keys unencrypted, and `chmod 0600` failures are swallowed. | [`security.py`](../src/autonomous_governance/security.py) 279-301 | Code review; DPAPI round-trip test covers only the happy path. | Raise on decryption failure. Use OS keyring / `age` / PKCS#11 off Windows. Make the permission failure fatal. |
+| **P3** | **Replay protection is in-memory only.** Consumed `action_id`s are lost on restart, so an unexpired token can be replayed. | [`kernel.py`](../src/autonomous_governance/kernel.py) 113, 342-368 | *Probe*: the same token was accepted in two consecutive kernel instances. | Rebuild the consumed set from the ledger at boot, or persist it (SQLite). Keep token TTLs short. |
 
 P6 probe strings. They are fenced because `laws-lint` flags unfenced destructive commands in Markdown, even when quoted (see P13):
 
@@ -183,31 +183,31 @@ False positive, PROHIBITED:
 
 | ID | Finding | Location | Remediation |
 |---|---|---|---|
-| **P16** | **Executed events do not bind *what* ran or *who* approved it.** `TOOL_EXECUTED` records only `tool`, `tier`, `duration_ms`, `payload_keys`: no payload digest and no `action_id`. *Probe-confirmed.* This weakens EU AI Act Art. 12 traceability. | [`kernel.py`](src/autonomous_governance/kernel.py) 304-314 | Log `payload_sha256`, `action_id`, `operator_pubkey` fingerprint and result digest. |
-| **P17** | **Tail truncation and wholesale rewrite are undetectable.** The chain is unkeyed and its head is not anchored. *Probe*: deleting the last 3 events still yields `valid: True`. | [`kernel.py`](src/autonomous_governance/kernel.py) 402-466 | Periodic Ed25519-signed checkpoints (head hash + count), optional external anchoring. For large ledgers, an RFC 6962 / RFC 9162-style Merkle tree with signed tree heads. *This is the point at which "Merkle" would become accurate.* |
-| **P7** | **Executor exceptions are not ledgered.** If `executor_func` raises, no `TOOL_FAILED` event is written. | [`kernel.py`](src/autonomous_governance/kernel.py) 302 | Wrap in `try/except/finally` and log the outcome with the exception type. |
-| **P9** | **CWD-relative defaults.** The manifest, ledger, and halt paths resolve against the process CWD, so the same kernel behaves differently depending on launch directory. | [`kernel.py`](src/autonomous_governance/kernel.py) 100-104 | Resolve against an explicit `project_root` or env var; log the resolved paths at boot. |
-| **P13** | **Linter blind spots and false positives.** It skips `tests/`, `kernel.py`, and `linter.py`, and misses `shutil.rmtree`, `subprocess(..., shell=True)`, and `os.system(var)`, so the 100/100 badge is self-referential. Conversely, it treats a dangerous command *quoted* in Markdown prose, inline code, or a table as a CRITICAL violation (−25 each); only fenced blocks are skipped. *Observed in this audit*: quoting the P6 probe strings inline dropped the score from 100 to 0. That also failed `test_generate_badge_asset_formats`, which scores the live repository (`Path.cwd()`) instead of a fixture, so the test is not hermetic. | [`linter.py`](src/autonomous_governance/linter.py) 87-110, 118-120, 29-71; [`test_badge.py`](tests/test_badge.py) 38-47 | Remove the self-exemptions (use inline suppressions with justification). Use AST-based rules for code; skip inline code spans in docs or score docs separately. Point the badge test at a fixture repository. Add Bandit/Semgrep to CI. |
-| **P14** | **Linter law labels diverge from the canonical charter.** For example, linter "Law 4: Open Standards" vs. charter Law 4 on other systems violating Laws 1–3; linter "Law 8: Empirical Grounding" vs. charter Law 8 on equity. Reports therefore cite the wrong law. | [`linter.py`](src/autonomous_governance/linter.py) 16-27 | Generate labels from [`Permanent_Active_Directives.txt`](Permanent_Active_Directives.txt) or a single constants module. |
-| **P10** | **SVG injection.** Badge `label` and `message` are interpolated into SVG without XML escaping. | [`badge.py`](src/autonomous_governance/badge.py) 180-183 | `xml.sax.saxutils.escape`. |
-| **P18** | **Charter paths ignore the manifest location.** Charter file names from the manifest resolve against the process CWD (`Path(file_name)`), even when `manifest_path` is absolute. A correctly installed project therefore fails to boot from a sub-directory. *Probe S11.* | [`kernel.py`](src/autonomous_governance/kernel.py) 162-166 | Resolve relative to the manifest's project root or an explicit `project_root`. See [INSTALLATION_METHODS_REPORT.md](INSTALLATION_METHODS_REPORT.md) §7. |
-| **P19** | **Distribution gap.** The wheel and sdist ship no charter files and no manifest, so `pip install` alone can never boot the kernel (*probe S0*). There is also no `init` command, the package is not on PyPI (404), and the repository is not an agent plugin (`copilot plugin install` → "No plugin.json found"). | [`pyproject.toml`](pyproject.toml) build targets | Package the charter as data (`importlib.resources`); add `agy-governance init`; add a plugin manifest. See [INSTALLATION_METHODS_REPORT.md](INSTALLATION_METHODS_REPORT.md) §6.2. |
+| **P16** | **Executed events do not bind *what* ran or *who* approved it.** `TOOL_EXECUTED` records only `tool`, `tier`, `duration_ms`, `payload_keys`: no payload digest and no `action_id`. *Probe-confirmed.* This weakens EU AI Act Art. 12 traceability. | [`kernel.py`](../src/autonomous_governance/kernel.py) 304-314 | Log `payload_sha256`, `action_id`, `operator_pubkey` fingerprint and result digest. |
+| **P17** | **Tail truncation and wholesale rewrite are undetectable.** The chain is unkeyed and its head is not anchored. *Probe*: deleting the last 3 events still yields `valid: True`. | [`kernel.py`](../src/autonomous_governance/kernel.py) 402-466 | Periodic Ed25519-signed checkpoints (head hash + count), optional external anchoring. For large ledgers, an RFC 6962 / RFC 9162-style Merkle tree with signed tree heads. *This is the point at which "Merkle" would become accurate.* |
+| **P7** | **Executor exceptions are not ledgered.** If `executor_func` raises, no `TOOL_FAILED` event is written. | [`kernel.py`](../src/autonomous_governance/kernel.py) 302 | Wrap in `try/except/finally` and log the outcome with the exception type. |
+| **P9** | **CWD-relative defaults.** The manifest, ledger, and halt paths resolve against the process CWD, so the same kernel behaves differently depending on launch directory. | [`kernel.py`](../src/autonomous_governance/kernel.py) 100-104 | Resolve against an explicit `project_root` or env var; log the resolved paths at boot. |
+| **P13** | **Linter blind spots and false positives.** It skips `tests/`, `kernel.py`, and `linter.py`, and misses `shutil.rmtree`, `subprocess(..., shell=True)`, and `os.system(var)`, so the 100/100 badge is self-referential. Conversely, it treats a dangerous command *quoted* in Markdown prose, inline code, or a table as a CRITICAL violation (−25 each); only fenced blocks are skipped. *Observed in this audit*: quoting the P6 probe strings inline dropped the score from 100 to 0. That also failed `test_generate_badge_asset_formats`, which scores the live repository (`Path.cwd()`) instead of a fixture, so the test is not hermetic. | [`linter.py`](../src/autonomous_governance/linter.py) 87-110, 118-120, 29-71; [`test_badge.py`](../tests/test_badge.py) 38-47 | Remove the self-exemptions (use inline suppressions with justification). Use AST-based rules for code; skip inline code spans in docs or score docs separately. Point the badge test at a fixture repository. Add Bandit/Semgrep to CI. |
+| **P14** | **Linter law labels diverge from the canonical charter.** For example, linter "Law 4: Open Standards" vs. charter Law 4 on other systems violating Laws 1–3; linter "Law 8: Empirical Grounding" vs. charter Law 8 on equity. Reports therefore cite the wrong law. | [`linter.py`](../src/autonomous_governance/linter.py) 16-27 | Generate labels from [`Permanent_Active_Directives.txt`](../Permanent_Active_Directives.txt) or a single constants module. |
+| **P10** | **SVG injection.** Badge `label` and `message` are interpolated into SVG without XML escaping. | [`badge.py`](../src/autonomous_governance/badge.py) 180-183 | `xml.sax.saxutils.escape`. |
+| **P18** | **Charter paths ignore the manifest location.** Charter file names from the manifest resolve against the process CWD (`Path(file_name)`), even when `manifest_path` is absolute. A correctly installed project therefore fails to boot from a sub-directory. *Probe S11.* | [`kernel.py`](../src/autonomous_governance/kernel.py) 162-166 | Resolve relative to the manifest's project root or an explicit `project_root`. See [INSTALLATION_METHODS_REPORT.md](INSTALLATION_METHODS_REPORT.md) §7. |
+| **P19** | **Distribution gap.** The wheel and sdist ship no charter files and no manifest, so `pip install` alone can never boot the kernel (*probe S0*). There is also no `init` command, the package is not on PyPI (404), and the repository is not an agent plugin (`copilot plugin install` → "No plugin.json found"). | [`pyproject.toml`](../pyproject.toml) build targets | Package the charter as data (`importlib.resources`); add `agy-governance init`; add a plugin manifest. See [INSTALLATION_METHODS_REPORT.md](INSTALLATION_METHODS_REPORT.md) §6.2. |
 
 ### 4.4 Low / informational
 
 | ID | Finding | Location |
 |---|---|---|
-| **P8** | The docstring says `GovernanceViolation` "cannot be caught and suppressed by agent code". It is an ordinary `Exception` subclass and can be caught. In-process enforcement cannot prevent this; document the trust boundary instead. | [`kernel.py`](src/autonomous_governance/kernel.py) 37 |
-| **P11** ✅ | Ed25519 implementation passes RFC 8032 Test 1; measured sign time ≈ 5.5 ms. | [`security.py`](src/autonomous_governance/security.py) |
-| **P12** ✅ | Mean interception overhead 0.49 ms (SAFE) / 0.71 ms (signed ELEVATED). This meets PRD NFR-01 (≤ 2.5 ms). PRD NFR-02 (10k events/s async) is not implemented: writes are synchronous. | [`kernel.py`](src/autonomous_governance/kernel.py) |
-| — | `.halt` is checked **before each intercepted call**. It does not terminate in-flight executors or "worker threads", contrary to the [`USER_GUIDE.md`](USER_GUIDE.md) §4 diagram. | [`kernel.py`](src/autonomous_governance/kernel.py) 260-270 |
+| **P8** | The docstring says `GovernanceViolation` "cannot be caught and suppressed by agent code". It is an ordinary `Exception` subclass and can be caught. In-process enforcement cannot prevent this; document the trust boundary instead. | [`kernel.py`](../src/autonomous_governance/kernel.py) 37 |
+| **P11** ✅ | Ed25519 implementation passes RFC 8032 Test 1; measured sign time ≈ 5.5 ms. | [`security.py`](../src/autonomous_governance/security.py) |
+| **P12** ✅ | Mean interception overhead 0.49 ms (SAFE) / 0.71 ms (signed ELEVATED). This meets PRD NFR-01 (≤ 2.5 ms). PRD NFR-02 (10k events/s async) is not implemented: writes are synchronous. | [`kernel.py`](../src/autonomous_governance/kernel.py) |
+| — | `.halt` is checked **before each intercepted call**. It does not terminate in-flight executors or "worker threads", contrary to the [`USER_GUIDE.md`](USER_GUIDE.md) §4 diagram. | [`kernel.py`](../src/autonomous_governance/kernel.py) 260-270 |
 | — | Not implemented anywhere, despite appearing in some documents: Merkle tree, M-of-N quorum, CAC delegation tokens, HSM/PKCS#11, ML-DSA/Dilithium, SHA-3, signed manifest, framework adapters. | repo-wide |
 
 ### 4.5 Genuine strengths (keep)
 - **Charter pinning works**: LF-normalised SHA-256 digests, verified at boot and in CI. This is rare in the market (see §6.3).
 - **Payload-bound, expiring, single-use approval tokens** (AGL-V1) are the right design and are correctly implemented *when a key is pinned*.
 - **Zero runtime dependencies**, ~1.7k LOC, readable and typed, sub-millisecond overhead.
-- **Honest gap-disclosure tables** already exist in [`GOVERNANCE.md`](GOVERNANCE.md) and [`PRD.md`](PRD.md) §5, a good foundation for evidence-based compliance claims.
+- **Honest gap-disclosure tables** already exist in [`GOVERNANCE.md`](../GOVERNANCE.md) and [`PRD.md`](PRD.md) §5, a good foundation for evidence-based compliance claims.
 - Apache-2.0, `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and CI are all present.
 
 ---
@@ -236,7 +236,7 @@ Every capability claim in the repository was checked against code and probe resu
 | "OWASP Top 17" (MARKET_AUDIT) | **UNVERIFIED** | OWASP Top 10 for Agentic Applications 2026 (ASI01–ASI10) | Replaced |
 | `laws-lint` 100/100 (README :42-43) | **SELF-REFERENTIAL** | P13/P14 | Qualified |
 | Site/deck version v3.2.0 / v3.1.0, "no tests/CI", 71/100 (index.html, presentation.html) | **STALE** | 0.1.0 SDK + charter v3.2.1, 22 tests + CI | Updated |
-| [`AGENTIC_PRIME_DIRECTIVE.md`](AGENTIC_PRIME_DIRECTIVE.md) footer v3.1.0; [`AGENTIC_SACRED_COVENANT.md`](AGENTIC_SACRED_COVENANT.md) date | **STALE** | Manifest v3.2.1 | **Not edited.** These files are SHA-256-pinned; changes require the Amendment Protocol and re-pinning. |
+| [`AGENTIC_PRIME_DIRECTIVE.md`](../AGENTIC_PRIME_DIRECTIVE.md) footer v3.1.0; [`AGENTIC_SACRED_COVENANT.md`](../AGENTIC_SACRED_COVENANT.md) date | **STALE** | Manifest v3.2.1 | **Not edited.** These files are SHA-256-pinned; changes require the Amendment Protocol and re-pinning. |
 
 ---
 
@@ -432,7 +432,7 @@ Verification methods:
 
 ## APPENDIX B: CATALOGUE
 
-- 40 git-tracked files at baseline `1a0f616`. That original catalogue was session-local. The current [catalogue and verification record](audit/evidence-2026-11.json) is committed and identifies the inspected worktree by hashes. It is audit evidence, not a replacement for the authoritative charter manifest.
+- 40 git-tracked files at baseline `1a0f616`. That original catalogue was session-local. The current [catalogue and verification record](../audit/evidence-2026-11.json) is committed and identifies the inspected worktree by hashes. It is audit evidence, not a replacement for the authoritative charter manifest.
 - IDS records structural AST relationships, not verified runtime call paths. Fresh source review and execution tests establish the approval/ledger behavior; do not infer it from IDS lineage alone.
 
 ## APPENDIX C: MCP FLEET MEMORY & DEFECTS

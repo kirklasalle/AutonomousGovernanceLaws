@@ -5,9 +5,9 @@
 **Auditor:** Antigravity AI (Advanced Agentic Architecture & Governance Systems)  
 **Target Repository:** `AutonomousGovernanceLaws` (Kirk LaSalle, Founder)  
 **Target Artifacts Audited:**
-1. [`Permanent_Active_Directives.txt`](Permanent_Active_Directives.txt) (Genesis Document / Immutable Authority)
-2. [`AGENTIC_PRIME_DIRECTIVE.md`](AGENTIC_PRIME_DIRECTIVE.md) (Operational Constitution v3.1.0)
-3. [`AGENTIC_SACRED_COVENANT.md`](AGENTIC_SACRED_COVENANT.md) (Runtime Enforcement Covenant v2.0)
+1. [`Permanent_Active_Directives.txt`](../Permanent_Active_Directives.txt) (Genesis Document / Immutable Authority)
+2. [`AGENTIC_PRIME_DIRECTIVE.md`](../AGENTIC_PRIME_DIRECTIVE.md) (Operational Constitution v3.1.0)
+3. [`AGENTIC_SACRED_COVENANT.md`](../AGENTIC_SACRED_COVENANT.md) (Runtime Enforcement Covenant v2.0)
 
 > [!IMPORTANT]
 > **Superseded (2026-11-01).** This August 2026 audit reviewed the charter documents *before* the v0.1.0 SDK existed. Its findings on the text still stand as history. For the current, probe-verified assessment of the code, documentation, and market position, see [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md). Charter digests were re-pinned at v3.2.1.

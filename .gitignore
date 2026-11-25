@@ -42,7 +42,11 @@ desktop.ini
 *.pub
 *.pem
 *.sig
+*.replay.db*
 config/policy_registry.sig
+
+# ─── Local Workspace Telemetry ───
+.nexus_briefing.md
 
 # ─── OS ───
 *.tmp

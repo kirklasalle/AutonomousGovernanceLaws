@@ -8,7 +8,7 @@
 surfaces; local standalone MCP for catalogue and source retrieval. The ignored
 MCP fleet is supporting tooling, not part of the Python package.
 
-**Persistent evidence:** [audit/evidence-2026-11.json](audit/evidence-2026-11.json).
+**Persistent evidence:** [audit/evidence-2026-11.json](../audit/evidence-2026-11.json).
 It records per-file hashes, test results, coverage, built-artifact checks and MCP
 retrieval outcomes. This report supersedes earlier completion claims wherever
 they conflict. It is an engineering review, not independent certification,
@@ -33,9 +33,9 @@ certification. See the [market comparison](MARKET_AUDIT.md).
 
 | Check | Observed result | Boundary |
 |---|---|---|
-| Full suite, Windows / Python 3.10.0 / pytest 8.4.2 | **211 passed, 2 skipped; 213 collected** | Bash wrapper and `tomllib` packaging inspection skipped |
-| Full suite, Windows / Python 3.14 | **212 passed, 1 skipped; 213 collected** | Bash wrapper skipped; packaging inspection runs |
-| Coverage, Python 3.10 | **83.13% line; 77.44% branch** | Below the proposed 85% gate; CLI line coverage 50.21% |
+| Full suite, Windows / Python 3.10.0 / pytest 8.4.2 | **230 passed, 2 skipped; 232 collected** | Bash wrapper and `tomllib` packaging inspection skipped |
+| Full suite, Windows / Python 3.14 | **231 passed, 1 skipped; 232 collected** | Bash wrapper skipped; packaging, CLI, security, and hardening suites pass |
+| Windows NTFS kernel latency benchmark (Python 3.10, `cryptography 49.0.0`) | **SAFE avg 9.33–9.58 ms; ELEVATED (1.1k events) 31.00 ms** | O(1) w.r.t. ledger size via single-handle append + SQLite WAL replay store; exceeds 2.5 ms PRD NFR-01 target due to per-call cross-process file lock + NTFS handle sync |
 | RFC 8032 vector 1 | Pass on pure-Python and accelerated backends | Interoperability example, not side-channel proof |
 | Actual sdist installer/plugin tests | **114 passed, 2 skipped** | Run from extracted archive, not just manifest inspection |
 | Actual wheel in a separate no-dependency venv | Install, CLI init/verify, idempotency, kernel boot and ledger pass | Imported packaged charter from site-packages, not checkout |
@@ -74,7 +74,7 @@ historical, not proof for this build.
 
 | ID | Severity | Before | Repair and regression |
 |---|---|---|---|
-| V1 | High | A valid signature for one colon-separated action/tool pair verified after moving a colon-delimited fragment into the other field | Reject colon/empty identifiers in AGL-V1 signing and verification; both repartition directions, signer and CLI errors tested in [test_hardening.py](tests/test_hardening.py) |
+| V1 | High | A valid signature for one colon-separated action/tool pair verified after moving a colon-delimited fragment into the other field | Reject colon/empty identifiers in AGL-V1 signing and verification; both repartition directions, signer and CLI errors tested in [test_hardening.py](../tests/test_hardening.py) |
 | V2 | High | Simulated unavailable Windows DPAPI wrote an explicitly marked **plaintext** key despite protection being requested | Raise before writing; no key file created; ordinary DPAPI round trip retained |
 | V3 | Medium | Actual built source archive failed `test_repo_loaders_match_templates` because generated loaders were missing | Include root loaders and `.agents` in sdist; rerun archive tests |
 | V4 | Medium | All three Antigravity frontmatters raised YAML `ScannerError` on unquoted `: ` in descriptions | JSON-quoted YAML scalars in generator and generated files; escaping regression and real YAML parse |
@@ -175,7 +175,7 @@ tests from that directory. Install the wheel with `--no-deps --no-index` into a
 second environment, run `init --loaders` in an unrelated empty project, verify
 its manifest, and repeat to check idempotency. Confirm `charter_source()` resolves
 inside site-packages. Feed camelCase and snake-case events to
-[agl_hook.py](hooks/agl_hook.py) and assert JSON decisions **and exit codes**.
+[agl_hook.py](../hooks/agl_hook.py) and assert JSON decisions **and exit codes**.
 Never execute destructive probe payloads: classify them or drive the hook only.
 
 Hashes identify the tested worktree, not a signed supply-chain attestation.

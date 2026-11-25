@@ -54,13 +54,19 @@ can bypass enforcement on legacy Copilot CLI; supported-host live validation
 remains incomplete. The ledger cannot detect tail truncation or a fully
 recomputed chain without an external checkpoint.
 
-AGL-V1 action IDs and tool names must be non-empty and contain no colon. Signing
-and verification reject ambiguous identifiers; ordinary existing tokens retain
-the same wire format. Requested DPAPI protection now refuses unavailable DPAPI
-on Windows; the explicitly marked POSIX fallback remains unencrypted. DPAPI is
+AGL-V1 and domain-scoped AGL-V2 action IDs, tool names, and scopes must be
+non-empty and contain no colon. Signing and verification reject ambiguous
+identifiers and small-order Ed25519 public keys; ordinary existing V1 tokens
+retain the same wire format. Requested DPAPI protection refuses unavailable
+DPAPI on Windows. On POSIX, encryption uses `AGL_KEY_PASSPHRASE` with 600,000
+PBKDF2-HMAC-SHA256 iterations and AES-256-GCM (or HMAC-SHA256 CTR when
+`cryptography` is absent), failing closed unless `--allow-plaintext` is passed.
+Detached manifest signatures (`sign-manifest`) and signed ledger checkpoints
+(`checkpoint` / `audit-ledger --checkpoint`) detect manifest tampering and
+ledger tail truncation when verified against a pinned operator key. DPAPI is
 Windows-user-bound protection, not an HSM or a defense against code running as
 the same user.
 
-See [current verification](AUDIT_VERIFICATION_2026-11.md) for tested boundaries and
-the [audit](WORLD_CLASS_AUDIT_2026-11.md) for open findings. Response timelines
+See [current verification](documents/AUDIT_VERIFICATION_2026-11.md) for tested boundaries and
+the [audit](documents/WORLD_CLASS_AUDIT_2026-11.md) for open findings. Response timelines
 above are maintainer targets, not a contracted SLA.

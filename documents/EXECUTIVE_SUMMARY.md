@@ -13,7 +13,7 @@
 > was **39/100** before remediation; the retained internal assessment is
 > **58.5/100, hardened pre-alpha**. Read the
 > [fresh verification report](AUDIT_VERIFICATION_2026-11.md) and
-> [persistent evidence](audit/evidence-2026-11.json), not test counts or live-host
+> [persistent evidence](../audit/evidence-2026-11.json), not test counts or live-host
 > assurances from earlier revisions.
 
 > [!NOTE]
@@ -33,7 +33,7 @@
 
 **The Autonomous Governance Laws (AGL)** is a constitutional governance framework for autonomous AI agents, authored and ratified by **Kirk LaSalle**. It has two layers:
 
-1. **Constitutional doctrine.** The 10 Laws for Intelligence Systems, the Agentic Prime Directive, and the Agentic Sacred Covenant. Their SHA-256 digests are pinned in [`config/charter_manifest.json`](config/charter_manifest.json) (charter v3.2.1).
+1. **Constitutional doctrine.** The 10 Laws for Intelligence Systems, the Agentic Prime Directive, and the Agentic Sacred Covenant. Their SHA-256 digests are pinned in [`config/charter_manifest.json`](../config/charter_manifest.json) (charter v3.2.1).
 2. **Runtime SDK.** The `autonomous-governance-laws` 0.1.0 Python package:
    - a 3-tier tool-call interceptor;
    - payload-bound single-use Ed25519 operator approvals (AGL-V1);
@@ -181,7 +181,7 @@ The identified P0 repairs and follow-up regressions are verified, not a blanket 
 | Security posture | 🟡 Partial | R1 closed; R2–R4 mostly closed or mitigated; P17 and the plugin's fail-open edges (R11) remain |
 | Compliance tooling | 🟡 Partial | Badge and linter exist but are self-referential; no OWASP ASI or EU article evidence export |
 | Open-source infrastructure | ✅ Ready | Apache-2.0, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, CI |
-| Governance structure | ✅ Ready | Council, quorum, and amendment protocol in [`GOVERNANCE.md`](GOVERNANCE.md) |
+| Governance structure | ✅ Ready | Council, quorum, and amendment protocol in [`GOVERNANCE.md`](../GOVERNANCE.md) |
 | Distribution & ecosystem | 🟡 Partial | `init` and the agent plugin ship; not on PyPI or a plugin marketplace; no framework adapters; bus factor 1 |
 
 **Investment readiness is not established.** Earlier 60–90-day estimates were

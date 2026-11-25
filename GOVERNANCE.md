@@ -32,8 +32,8 @@ Per `AGENTIC_SACRED_COVENANT.md` Article III, Section 3.1:
 | **6** | Data Privacy & Ownership | **Partial** | Known secret-path checks; payload hashes instead of raw arguments | `test_classifier_prohibits` in [test_hardening.py](tests/test_hardening.py) | No sandbox, vault injection, DLP, consent model or general secret-read prevention. |
 | **7** | Truthfulness & Non-Deception | **Specified** | Deterministic telemetry instrumentation | *None yet* | **No hallucination detection.** Telemetry records actions but does not verify output truthfulness. |
 | **8** | Equity & Neutrality | **Declarative** | System prompt policy checks | *None yet* | **No runtime control.** No bias detection pipeline. No fairness scoring. Research-frontier problem. |
-| **9** | Verifiable Ledger & Fallback | **Partial** | SHA-256 chain, restart continuity and cross-process lock | `test_ledger_chain_survives_reboots`, `test_ledger_valid_under_concurrent_processes` in [test_hardening.py](tests/test_hardening.py) | No signed checkpoint, external anchor, tail-truncation detection or diagnostic-fallback engine. |
-| **10** | Boundaries & Non-Replication | **Partial** | LF-normalised charter digests; pinned-key, single-use approvals in SDK | `test_law10_charter_tamper_fails_boot` in [test_kernel.py](tests/test_kernel.py); approval tests in [test_hardening.py](tests/test_hardening.py) | `require_attestation` requires a public key; it does not verify signed configuration. No CAC delegation. Plugin prompts are not signed SDK approvals. |
+| **9** | Verifiable Ledger & Fallback | **Partial** | SHA-256 chain, restart continuity, cross-process lock & signed checkpoints (`checkpoint` / `audit-ledger --checkpoint`) | `test_ledger_chain_survives_reboots`, `test_detached_manifest_signature_and_signed_checkpoint` in [test_hardening.py](tests/test_hardening.py) | Requires operator to retain latest signed checkpoint or external witness; no RFC 9162 Merkle tree or diagnostic-fallback engine yet. |
+| **10** | Boundaries & Non-Replication | **Partial** | LF-normalised charter digests, optional detached manifest signature (`sign-manifest`); pinned-key, single-use SQLite-backed `AGL-V1`/`AGL-V2` approvals | `test_law10_charter_tamper_fails_boot` in [test_kernel.py](tests/test_kernel.py); `test_sqlite_replay_survives_ledger_archival_and_db_is_protected` in [test_hardening.py](tests/test_hardening.py) | Signed config attestation covers manifest/checkpoints/tokens, not full runtime config YAML. No CAC delegation. Plugin prompts are host permissions, not signed SDK tokens. |
 
 ### Status Definitions
 
@@ -45,8 +45,8 @@ The SDK protects only calls routed through it by trusted application code.
 The plugin protects only calls delivered to a successfully running hook by a
 compatible host. Host startup failures, disabled hooks, arbitrary same-user code
 and filesystem access are outside that boundary. See
-[verification evidence](AUDIT_VERIFICATION_2026-11.md) and
-[installation limits](INSTALLATION_METHODS_REPORT.md#1-bottom-line).
+[verification evidence](documents/AUDIT_VERIFICATION_2026-11.md) and
+[installation limits](documents/INSTALLATION_METHODS_REPORT.md#1-bottom-line).
 
 ---
 

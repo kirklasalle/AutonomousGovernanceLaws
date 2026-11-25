@@ -396,13 +396,25 @@ def test_classifier_safe(classifier, tool, payload):
 
 def test_saved_dpapi_key_is_never_plain(tmp_path):
     key_file = tmp_path / "operator.dpapi.key"
-    DPAPIKeyStore.save_key(key_file, b"k" * 32, use_dpapi=True)
+    DPAPIKeyStore.save_key(key_file, b"k" * 32, use_dpapi=True, allow_plaintext_fallback=True)
     blob = key_file.read_bytes()
     expected_prefix = DPAPI_BLOB_HEADER if DPAPIKeyStore.is_dpapi_available() else POSIX_FALLBACK_MARKER
     assert blob.startswith(expected_prefix)
     assert DPAPIKeyStore.load_key(key_file, is_dpapi=True) == b"k" * 32
     if os.name != "nt":
         assert (key_file.stat().st_mode & 0o777) == 0o600
+
+
+def test_posix_dpapi_fails_closed_without_passphrase(tmp_path, monkeypatch):
+    import autonomous_governance.security as security
+
+    monkeypatch.setattr(security.sys, "platform", "linux")
+    monkeypatch.setattr(DPAPIKeyStore, "is_dpapi_available", staticmethod(lambda: False))
+    monkeypatch.delenv("AGL_KEY_PASSPHRASE", raising=False)
+    key_file = tmp_path / "operator.dpapi.key"
+    with pytest.raises(RuntimeError, match="AGL_KEY_PASSPHRASE"):
+        DPAPIKeyStore.save_key(key_file, b"k" * 32, use_dpapi=True)
+    assert not key_file.exists()
 
 
 def test_undecryptable_dpapi_blob_raises(tmp_path):
@@ -440,3 +452,91 @@ def test_empty_manifest_fails_boot(tmp_path):
     manifest.write_text(json.dumps({"charter_files": {}}), encoding="utf-8")
     with pytest.raises(GovernanceViolation, match="LAW10-CHARTER"):
         GovernanceKernel(manifest_path=manifest, ledger_path=tmp_path / "e.jsonl", halt_file=tmp_path / ".halt")
+
+
+def test_default_ledger_and_halt_resolve_against_project_root(env, tmp_path, monkeypatch):
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+    kernel = GovernanceKernel(manifest_path=env["manifest"])
+    assert kernel.ledger_path == env["root"].resolve() / ".ledger" / "events.jsonl"
+    assert kernel.halt_file == env["root"].resolve() / ".halt"
+
+
+def test_sqlite_replay_survives_ledger_archival_and_db_is_protected(env):
+    payload = {"target_path": "out.txt"}
+    token = sign(env, "act-archive", "write_file", payload)
+    k1 = boot(env)
+    assert k1.intercept_and_execute("write_file", payload, lambda p: "ok", token) == "ok"
+    assert k1.evaluate_risk("write_file", {"target_path": str(k1._replay_db_path)}) == PolicyTier.PROHIBITED
+
+    # Simulate ledger archival/deletion; replay store must still block token reuse.
+    env["ledger"].unlink()
+    k2 = boot(env)
+    with pytest.raises(ApprovalRequired):
+        k2.intercept_and_execute("write_file", payload, lambda p: "again", token)
+
+
+def test_classifier_sec02_bypass_regressions(classifier, env):
+    assert classifier.evaluate_risk("read_file", {"input": ".keys/operator.key"}) == PolicyTier.PROHIBITED
+    assert classifier.evaluate_risk("grep", {"pattern": ".*", "root": ".keys/operator.key"}) == PolicyTier.PROHIBITED
+    assert classifier.evaluate_risk("read_file", {"path": "keys/operator.pem"}) == PolicyTier.PROHIBITED
+
+    # Symlink to operator.key must be caught on SAFE_TOOLS
+    secret = env["root"] / ".keys" / "operator.key"
+    secret.write_bytes(b"secret")
+    link = env["root"] / "innocent.txt"
+    try:
+        os.symlink(secret, link)
+    except (OSError, NotImplementedError):
+        pass
+    else:
+        assert classifier.evaluate_risk("read_file", {"path": str(link)}) == PolicyTier.PROHIBITED
+
+    # Depth overflow fails closed
+    deep = {"command": "rm -rf /"}
+    for _ in range(17):
+        deep = {"nested": deep}
+    assert classifier.evaluate_risk("execute_command", deep) == PolicyTier.PROHIBITED
+
+    # CONTENT_KEYS only skipped for file writers, not run_sql
+    assert classifier.evaluate_risk("run_sql", {"body": "DROP TABLE users"}) == PolicyTier.PROHIBITED
+
+    # powershell -EncodedCommand ('rm -rf /' in UTF-16LE base64)
+    import base64
+    b64 = base64.b64encode("rm -rf /".encode("utf-16-le")).decode("ascii")
+    assert classifier.evaluate_risk("execute_command", {"command": f"powershell -EncodedCommand {b64}"}) == PolicyTier.PROHIBITED
+
+    # git global options before mutating subcommand
+    assert classifier.evaluate_risk("execute_command", {"command": "git -c a=1 -c b=2 -c c=3 checkout -- .halt"}) == PolicyTier.PROHIBITED
+
+
+def test_detached_manifest_signature_and_signed_checkpoint(env):
+    from autonomous_governance.security import sign_manifest
+
+    sig_path = env["manifest"].with_suffix(".sig")
+    sign_manifest(env["manifest"], env["priv"], sig_path=sig_path)
+    kernel = boot(env, require_manifest_signature=True)
+    assert kernel._manifest_sig_verified is True
+
+    kernel.intercept_and_execute("read_file", {"target_path": "ok.txt"}, lambda p: "ok")
+    cp = kernel.create_checkpoint(env["priv"])
+    assert kernel.verify_checkpoint(cp)[0] is True
+
+    # Tail truncation must be caught by verify_checkpoint
+    lines = env["ledger"].read_text(encoding="utf-8").splitlines()
+    env["ledger"].write_text("\n".join(lines[:-1]) + "\n", encoding="utf-8")
+    ok, reason = kernel.verify_checkpoint(cp)
+    assert ok is False and "truncation" in reason.lower()
+
+    # Tampered manifest signature fails boot
+    sig_path.write_text("00" * 64, encoding="utf-8")
+    with pytest.raises(GovernanceViolation, match="LAW10-CHARTER"):
+        boot(env, require_manifest_signature=True)
+
+
+def test_small_order_pubkey_fails_boot(env):
+    bad_pub = env["root"] / "small_order.pub"
+    bad_pub.write_bytes(bytes([1]) + bytes(31))
+    with pytest.raises(GovernanceViolation, match="LAW10-APPROVAL"):
+        boot(env, operator_pubkey_path=bad_pub)

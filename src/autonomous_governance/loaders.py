@@ -4,7 +4,7 @@ Host instruction loaders for the AGL charter.
 A loader is a small instruction file that makes an AI host (GitHub Copilot, Claude
 Code, Google Antigravity) read the three charter documents. Loaders only reference
 the documents; they never restate or paraphrase them, so they cannot drift from the
-SHA-256-pinned charter. See INSTALLATION_METHODS_REPORT.md section 3.1.4.
+SHA-256-pinned charter. See documents/INSTALLATION_METHODS_REPORT.md section 3.1.4.
 """
 
 from __future__ import annotations

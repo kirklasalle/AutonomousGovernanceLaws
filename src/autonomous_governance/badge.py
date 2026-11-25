@@ -7,8 +7,12 @@ schemas for autonomous agent swarms and repositories complying with Kirk LaSalle
 """
 
 import json
+import re
 from pathlib import Path
 from typing import Any
+from xml.sax.saxutils import escape as xml_escape
+
+_HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{3,8}$")
 
 
 def audit_repository_compliance(
@@ -143,9 +147,13 @@ def render_svg_badge(
         color: Hex color for the right status box (e.g. '#10b981')
         style: 'flat' or 'flat-square'
     """
-    # Estimate widths based on character counts
-    label_len = len(label)
-    msg_len = len(message)
+    # Estimate widths based on character counts before XML escaping
+    safe_label = xml_escape(str(label), {'"': "&quot;", "'": "&#x27;"})
+    safe_message = xml_escape(str(message), {'"': "&quot;", "'": "&#x27;"})
+    safe_color = color if _HEX_COLOR_RE.fullmatch(str(color)) else "#64748b"
+
+    label_len = len(str(label))
+    msg_len = len(str(message))
     label_width = int(max(label_len * 7 + 16, 80))
     msg_width = int(max(msg_len * 7 + 16, 70))
     total_width = label_width + msg_width
@@ -155,8 +163,8 @@ def render_svg_badge(
     label_center_x = round(label_width / 2.0, 1)
     msg_center_x = round(label_width + (msg_width / 2.0), 1)
 
-    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{total_width}" height="{height}" role="img" aria-label="{label}: {message}">
-  <title>{label}: {message}</title>
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{total_width}" height="{height}" role="img" aria-label="{safe_label}: {safe_message}">
+  <title>{safe_label}: {safe_message}</title>
   <linearGradient id="b" x2="0" y2="100%">
     <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
     <stop offset="1" stop-opacity=".1"/>
@@ -166,14 +174,14 @@ def render_svg_badge(
   </clipPath>
   <g clip-path="url(#a)">
     <rect width="{label_width}" height="{height}" fill="#1e293b"/>
-    <rect x="{label_width}" width="{msg_width}" height="{height}" fill="{color}"/>
+    <rect x="{label_width}" width="{msg_width}" height="{height}" fill="{safe_color}"/>
     <rect width="{total_width}" height="{height}" fill="url(#b)"/>
   </g>
   <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="11">
-    <text x="{label_center_x}" y="15" fill="#010101" fill-opacity=".3">{label}</text>
-    <text x="{label_center_x}" y="14" fill="#f8fafc">{label}</text>
-    <text x="{msg_center_x}" y="15" fill="#010101" fill-opacity=".3">{message}</text>
-    <text x="{msg_center_x}" y="14" fill="#ffffff" font-weight="bold">{message}</text>
+    <text x="{label_center_x}" y="15" fill="#010101" fill-opacity=".3">{safe_label}</text>
+    <text x="{label_center_x}" y="14" fill="#f8fafc">{safe_label}</text>
+    <text x="{msg_center_x}" y="15" fill="#010101" fill-opacity=".3">{safe_message}</text>
+    <text x="{msg_center_x}" y="14" fill="#ffffff" font-weight="bold">{safe_message}</text>
   </g>
 </svg>"""
     return svg

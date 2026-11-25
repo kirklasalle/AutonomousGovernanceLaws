@@ -126,7 +126,7 @@ CAMEL_CASES = [
     ("view", {"path": "README.md"}, None),
     ("grep", {"pattern": "operator.key", "path": "."}, None),
     ("glob", {"pattern": "**/*.py"}, None),
-    ("web_fetch", {"url": "https://example.com"}, None),
+    ("web_fetch", {"url": "https://example.com"}, "ask"),
     ("bash", {"command": "git status"}, "ask"),
     ("powershell", {"command": "Get-ChildItem"}, "ask"),
     ("edit", {"path": "src/app.py", "old_str": "a", "new_str": "b"}, "ask"),
@@ -165,7 +165,7 @@ def test_camel_case_decisions(dirs, tool, args, expected):
 
 SNAKE_CASES = [
     ("Read", {"file_path": "README.md"}, None, 0),
-    ("WebFetch", {"url": "https://example.com"}, None, 0),
+    ("WebFetch", {"url": "https://example.com"}, "ask", 0),
     ("Write", {"file_path": "b.py", "content": "print(1)"}, "ask", 0),
     ("MultiEdit", {"file_path": "x.py", "edits": []}, "ask", 0),
     ("mcp__github__create_issue", {"title": "x"}, "ask", 0),
@@ -952,6 +952,7 @@ def test_copilot_hooks_config():
             assert deny, fallback
             output = json.loads(deny.group(1))
             assert output["permissionDecision"] == "deny"
+            assert output["hookSpecificOutput"]["permissionDecision"] == "deny"
             assert output["permissionDecisionReason"].startswith(hooks.FAIL_CLOSED_PREFIX)
 
 
@@ -977,3 +978,33 @@ def test_skill_frontmatter():
     fields = dict(line.split(":", 1) for line in front.group(1).splitlines())
     assert fields["name"].strip() == "agl-charter"
     assert len(fields["description"].strip()) > 40
+
+
+def test_hook_sec02_and_strict_ledger_regressions(dirs):
+    project, data = dirs
+    # Extra key on write_file must not be stripped
+    _, output, _ = call(dirs, "preToolUse", camel(project, "edit_file", {"path": "ok.txt", "extra_cmd": "rm -rf /"}))
+    assert decision(output) == "deny"
+
+    # Non-dict string argument on read_file targeting secret key must deny
+    _, output, _ = call(dirs, "preToolUse", camel(project, "read_file", ".keys/operator.key"))
+    assert decision(output) == "deny"
+
+    # Deeply nested write payload > depth 8 fails closed
+    deep = {"path": ".ledger/events.jsonl"}
+    for _ in range(9):
+        deep = {"nested": deep}
+    _, output, _ = call(dirs, "preToolUse", camel(project, "edit_file", deep))
+    assert decision(output) == "deny"
+
+    # AGL_STRICT_LEDGER=1 fails closed on broken ledger in SessionStart
+    ledger = data / ".ledger" / "events.jsonl"
+    lines = ledger.read_text(encoding="utf-8").splitlines()
+    first = json.loads(lines[0])
+    first["data"]["tampered"] = True
+    ledger.write_text("\n".join([json.dumps(first), *lines[1:]]) + "\n", encoding="utf-8")
+    code, _, stderr = call(
+        dirs, "SessionStart", snake(project, "", {}, event="SessionStart"),
+        env={"AGL_STRICT_LEDGER": "1"},
+    )
+    assert code == 2 and "AGL_STRICT_LEDGER" in stderr

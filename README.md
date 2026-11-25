@@ -10,10 +10,10 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue?style=for-the-badge&logo=apache" alt="License" /></a>
   <a href="GOVERNANCE.md"><img src="https://img.shields.io/badge/Governance%20Status-Active%20%26%20Ratified%20(v3.2.1)-00E676?style=for-the-badge&logo=shield" alt="Governance Status" /></a>
   <a href="pyproject.toml"><img src="https://img.shields.io/badge/Python%20SDK-v0.1.0%20Pre--Alpha-orange?style=for-the-badge&logo=python" alt="Python SDK" /></a>
-  <a href="AUDIT_VERIFICATION_2026-11.md"><img src="https://img.shields.io/badge/Verified%20Test%20Suite-213%20collected-blue?style=for-the-badge" alt="Local verification: 213 tests collected; see platform results" /></a>
+  <a href="documents/AUDIT_VERIFICATION_2026-11.md"><img src="https://img.shields.io/badge/Verified%20Test%20Suite-232%20collected-blue?style=for-the-badge" alt="Local verification: 232 tests collected; see platform results" /></a>
   <a href="src/autonomous_governance/linter.py"><img src="https://img.shields.io/badge/laws--lint-100%2F100%20Compliant-14b8a6?style=for-the-badge" alt="Constitutional Linter" /></a>
-  <a href="WORLD_CLASS_AUDIT_2026-11.md"><img src="https://img.shields.io/badge/Engineering%20Audit%20(Nov%202026)-58.5%2F100%20Hardened%20Pre--Alpha-purple?style=for-the-badge" alt="Engineering Audit November 2026: 58.5/100 after remediation (39/100 baseline)" /></a>
-  <a href="DEVELOPER_GUIDE.md"><img src="https://img.shields.io/badge/Ledger-SHA--256%20Hash--Chained-orange?style=for-the-badge" alt="Ledger" /></a>
+  <a href="documents/WORLD_CLASS_AUDIT_2026-11.md"><img src="https://img.shields.io/badge/Engineering%20Audit%20(Nov%202026)-58.5%2F100%20Hardened%20Pre--Alpha-purple?style=for-the-badge" alt="Engineering Audit November 2026: 58.5/100 after remediation (39/100 baseline)" /></a>
+  <a href="documents/DEVELOPER_GUIDE.md"><img src="https://img.shields.io/badge/Ledger-SHA--256%20Hash--Chained-orange?style=for-the-badge" alt="Ledger" /></a>
 </p>
 
 ---
@@ -27,7 +27,7 @@
 
 ## 🚦 PROJECT STATUS & 360° AUDIT SUITE
 
-**Current evidence:** [verification report](AUDIT_VERIFICATION_2026-11.md) and
+**Current evidence:** [verification report](documents/AUDIT_VERIFICATION_2026-11.md) and
 [machine-readable checks, catalogue and citations](audit/evidence-2026-11.json).
 The 58.5/100 score is an internal engineering assessment, not certification.
 Fresh verification covers the SDK, installed wheel/source archive and hook
@@ -40,17 +40,17 @@ qualification remains open.
 | **Runtime Enforcement Covenant** | 🟢 **Ratified & Binding** | 3-Tier Risk Model, Attestation, Gap Registry | [`AGENTIC_SACRED_COVENANT.md`](AGENTIC_SACRED_COVENANT.md), [`GOVERNANCE.md`](GOVERNANCE.md) |
 | **Python SDK Kernel** | 🟡 **v0.1.0 Pre-alpha** (P0 security fixes landed; P9 open) | Interceptor Kernel, Invariant Gating, Ledger Engine | [`src/autonomous_governance/`](src/autonomous_governance/), [`pyproject.toml`](pyproject.toml) |
 | **Charter Verification** | 🟢 **Verified** | SHA-256 Digest Pinning (`LAW10-CHARTER` v3.2.1) | [`config/charter_manifest.json`](config/charter_manifest.json), [`scripts/verify_charter.py`](scripts/verify_charter.py) |
-| **Automated Tests** | 🟢 **213 collected**; Windows Python 3.10: 211 pass / 2 skip; Python 3.14: 212 pass / 1 skip. 83.13% line / 77.44% branch coverage on 3.10 | SDK, Ed25519 backends, DPAPI, installer, loaders, plugin protocols | [verification](AUDIT_VERIFICATION_2026-11.md), [`tests/`](tests/) |
-| **Hardware & Token Security** | 🟡 **Fails closed** | RFC 8032 Ed25519 tokens, Windows DPAPI. Elevated actions are refused unless an operator public key is pinned. | [`src/autonomous_governance/security.py`](src/autonomous_governance/security.py) |
+| **Automated Tests** | 🟢 **232 collected**; Windows Python 3.10: 230 pass / 2 skip; Python 3.14: 231 pass / 1 skip. | SDK, Ed25519 + small-order checks, DPAPI + POSIX V2 AEAD, SQLite replay, manifest/checkpoint sigs, plugin protocols | [verification](documents/AUDIT_VERIFICATION_2026-11.md), [`tests/`](tests/) |
+| **Hardware & Token Security** | 🟡 **Fails closed** | RFC 8032 Ed25519 (`AGL-V1`/`AGL-V2`), Windows DPAPI, POSIX PBKDF2-600k + AES-256-GCM. Elevated actions fail closed without a pinned key. | [`src/autonomous_governance/security.py`](src/autonomous_governance/security.py) |
 | **Agent Plugin** | 🟡 **Pre-alpha**; protocol/wrapper-tested, final live-host qualification open | Host-dependent deny/ask hooks and a classification-decision ledger; not a sandbox or signed SDK approval path | [`.plugin/`](.plugin/), [`.claude-plugin/`](.claude-plugin/), [`hooks/`](hooks/) |
 | **Compliance Badge** | 🟡 **Self-assessed** | SVG badge & Shields.io endpoint from `laws-lint`. Not a third-party certification. | [`assets/compliance_badge.svg`](assets/compliance_badge.svg), [`src/autonomous_governance/badge.py`](src/autonomous_governance/badge.py) |
 | **Constitutional Linter** | 🟡 **100/100 self-score** (blind spots P13/P14) | Static audit of prompts, tool calls, and scripts | [`src/autonomous_governance/linter.py`](src/autonomous_governance/linter.py) (`laws-lint`) |
-| **World-Class Engineering Audit** | 🟣 **Nov 2026: 39/100 baseline → 58.5/100** after P0 fixes and the plugin (self-assessed; ≥ 70 needs the rest of P1) | Evidence-based audit, findings P1–P19, market position | [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md) |
-| **Installation Methods Report** | 🟣 **Complete** | Charter-copy vs. agent-plugin install; both routes now ship (`agy-governance init`, the plugin) | [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md), [`scripts/install_charter.ps1`](scripts/install_charter.ps1) |
-| **Critical Internal Audit** | ⚪ **Superseded** | August 2026 gap assessment (historical) | [`CRITICAL_AUDIT.md`](CRITICAL_AUDIT.md) |
-| **Market Landscape Audit** | 🟣 **v2.2.0 (Nov 2026)** | Primary-source recheck, bounded positioning and competitor comparison | [`MARKET_AUDIT.md`](MARKET_AUDIT.md) |
-| **Executive Scorecard** | 🟣 **v3.2.0** | Consolidated project health, risks and verified evidence | [`EXECUTIVE_SUMMARY.md`](EXECUTIVE_SUMMARY.md) |
-| **Interactive HTML Presentation**| ⚪ **Historical** | Archived August deck, explicitly superseded | [`presentation.html`](presentation.html) |
+| **World-Class Engineering Audit** | 🟣 **Nov 2026: 39/100 baseline → 58.5/100** after P0 fixes and the plugin (self-assessed; ≥ 70 needs the rest of P1) | Evidence-based audit, findings P1–P19, market position | [`WORLD_CLASS_AUDIT_2026-11.md`](documents/WORLD_CLASS_AUDIT_2026-11.md) |
+| **Installation Methods Report** | 🟣 **Complete** | Charter-copy vs. agent-plugin install; both routes now ship (`agy-governance init`, the plugin) | [`INSTALLATION_METHODS_REPORT.md`](documents/INSTALLATION_METHODS_REPORT.md), [`scripts/install_charter.ps1`](scripts/install_charter.ps1) |
+| **Critical Internal Audit** | ⚪ **Superseded** | August 2026 gap assessment (historical) | [`CRITICAL_AUDIT.md`](documents/CRITICAL_AUDIT.md) |
+| **Market Landscape Audit** | 🟣 **v2.2.0 (Nov 2026)** | Primary-source recheck, bounded positioning and competitor comparison | [`MARKET_AUDIT.md`](documents/MARKET_AUDIT.md) |
+| **Executive Scorecard** | 🟣 **v3.2.0** | Consolidated project health, risks and verified evidence | [`EXECUTIVE_SUMMARY.md`](documents/EXECUTIVE_SUMMARY.md) |
+| **Interactive HTML Presentation**| ⚪ **Historical** | Archived August deck, explicitly superseded | [`presentation.html`](documents/presentation.html) |
 
 ---
 
@@ -135,7 +135,7 @@ Authored by **Kirk LaSalle**, these 10 Laws extend classical Asimovian principle
 
 ## 🛡️ RUNTIME INTERCEPTION & 3-TIER RISK PIPELINE
 
-Every tool invocation, API call, file mutation, and sub-agent spawn that your agent routes through `GovernanceKernel.intercept_and_execute` passes through the **Governance Interceptor Pipeline** before reaching the host OS or execution environment. Calls that bypass the kernel are not governed. To govern a coding assistant's own tool calls, see the agent-plugin route in [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md).
+Every tool invocation, API call, file mutation, and sub-agent spawn that your agent routes through `GovernanceKernel.intercept_and_execute` passes through the **Governance Interceptor Pipeline** before reaching the host OS or execution environment. Calls that bypass the kernel are not governed. To govern a coding assistant's own tool calls, see the agent-plugin route in [`INSTALLATION_METHODS_REPORT.md`](documents/INSTALLATION_METHODS_REPORT.md).
 
 ```mermaid
 sequenceDiagram
@@ -229,7 +229,7 @@ copilot plugin install kirklasalle/AutonomousGovernanceLaws
 In VS Code, install it as an agent plugin from the same repository. Use a local
 checkout for unpublished changes. The final build still needs live qualification
 in all target hosts; earlier Copilot 0.0.410 trial claims are retained as history.
-See the [verification boundary](AUDIT_VERIFICATION_2026-11.md).
+See the [verification boundary](documents/AUDIT_VERIFICATION_2026-11.md).
 
 Once installed, the plugin:
 
@@ -239,7 +239,7 @@ Once installed, the plugin:
 - **Emergency halt:** a `.halt` file in the project or data directory denies subsequent calls delivered to the hook; it does not interrupt work already running.
 - **On failure after Python starts:** the hook emits a denial for errors, oversized calls or its 20 s watchdog. Launch failures and host timeouts can still fail open; final host-specific behavior needs live qualification.
 
-The plugin's limits are listed in [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md) and in the [`CHANGELOG`](CHANGELOG.md) under Security.
+The plugin's limits are listed in [`INSTALLATION_METHODS_REPORT.md`](documents/INSTALLATION_METHODS_REPORT.md) and in the [`CHANGELOG`](CHANGELOG.md) under Security.
 
 ### 2. Verify Charter Integrity (CLI)
 
@@ -398,16 +398,17 @@ gantt
 | [`AGENTIC_PRIME_DIRECTIVE.md`](AGENTIC_PRIME_DIRECTIVE.md) | Operational constitution (v3.1.0) defining core directives & commitments | Engineers & Operators |
 | [`AGENTIC_SACRED_COVENANT.md`](AGENTIC_SACRED_COVENANT.md) | Human-AI covenant (v2.0) defining runtime enforcement & attestation | Systems Architects |
 | [`GOVERNANCE.md`](GOVERNANCE.md) | Runtime enforcement status matrix, Council quorum & amendment rules | Auditors & Regulators |
-| [`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md) | Evidence-based engineering audit (39/100 baseline, 58.5/100 after remediation), findings P1–P19, market position, roadmap | Leadership, Security & Due Diligence |
-| [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md) | Charter-copy vs. agent-plugin installation analysis, per-host loaders, tested procedure | Operators & Integrators |
-| [`CRITICAL_AUDIT.md`](CRITICAL_AUDIT.md) | August 2026 gap analysis (historical; superseded by the November 2026 audit) | Internal & Due Diligence |
-| [`MARKET_AUDIT.md`](MARKET_AUDIT.md) | AI governance market (≈ $0.4–0.5B in 2026, cited), EU AI Act, NIST & competitor matrix | Investors & Strategists |
-| [`EXECUTIVE_SUMMARY.md`](EXECUTIVE_SUMMARY.md) | Board-ready scorecard, project health dashboard & risk register | Leadership & Board |
-| [`presentation.html`](presentation.html) | Interactive 17-slide stakeholder presentation deck | Presenters & Stakeholders |
-| [`AUDIT_REPORT.md`](AUDIT_REPORT.md) | Due diligence audit, 7-vector stress tests & threat models | Security & Compliance |
-| [`PRD.md`](PRD.md) | Product Requirements Document & technical runtime specifications | Product & Engineering |
-| [`USER_GUIDE.md`](USER_GUIDE.md) | Operator handbook for issuing keys, approving actions, and emergency halts | Human Operators |
-| [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) | Technical guide for embedding the 10 Laws into any agent runtime | Systems Engineers |
+| [`documents/WORLD_CLASS_AUDIT_2026-11.md`](documents/WORLD_CLASS_AUDIT_2026-11.md) | Evidence-based engineering audit (39/100 baseline, 58.5/100 after remediation), findings P1–P19, market position, roadmap | Leadership, Security & Due Diligence |
+| [`documents/RD_ROADMAP_AND_ARCHITECTURE.md`](documents/RD_ROADMAP_AND_ARCHITECTURE.md) | Continued R&D architecture decisions (Q1–Q6), novelty/unknowns register, OS sandbox & Merkle roadmap | Architecture, R&D & Leadership |
+| [`documents/INSTALLATION_METHODS_REPORT.md`](documents/INSTALLATION_METHODS_REPORT.md) | Charter-copy vs. agent-plugin installation analysis, per-host loaders, tested procedure | Operators & Integrators |
+| [`documents/CRITICAL_AUDIT.md`](documents/CRITICAL_AUDIT.md) | August 2026 gap analysis (historical; superseded by the November 2026 audit) | Internal & Due Diligence |
+| [`documents/MARKET_AUDIT.md`](documents/MARKET_AUDIT.md) | AI governance market (≈ $0.4–0.5B in 2026, cited), EU AI Act, NIST & competitor matrix | Investors & Strategists |
+| [`documents/EXECUTIVE_SUMMARY.md`](documents/EXECUTIVE_SUMMARY.md) | Board-ready scorecard, project health dashboard & risk register | Leadership & Board |
+| [`documents/presentation.html`](documents/presentation.html) | Interactive 17-slide stakeholder presentation deck | Presenters & Stakeholders |
+| [`documents/AUDIT_REPORT.md`](documents/AUDIT_REPORT.md) | Due diligence audit, 7-vector stress tests & threat models | Security & Compliance |
+| [`documents/PRD.md`](documents/PRD.md) | Product Requirements Document & technical runtime specifications | Product & Engineering |
+| [`documents/USER_GUIDE.md`](documents/USER_GUIDE.md) | Operator handbook for issuing keys, approving actions, and emergency halts | Human Operators |
+| [`documents/DEVELOPER_GUIDE.md`](documents/DEVELOPER_GUIDE.md) | Technical guide for embedding the 10 Laws into any agent runtime | Systems Engineers |
 | [`CHANGELOG.md`](CHANGELOG.md) | Full semantic versioning provenance trace from genesis to present | Open Source Community |
 | [`LICENSE`](LICENSE) | Apache License 2.0 | Legal & Open Source |
 

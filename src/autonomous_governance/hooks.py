@@ -85,9 +85,9 @@ WRITE_TOOLS = frozenset({
 READ_ONLY_TOOLS = frozenset({
     "view", "read", "grep", "rg", "glob", "ls", "notebookread", "read_file", "list_dir",
     "file_search", "grep_search", "semantic_search", "read_bash", "list_bash", "bashoutput",
-    "read_powershell", "list_powershell", "web_fetch", "webfetch", "fetch_webpage",
-    "web_search", "websearch", "ask_user", "askuserquestion", "report_intent",
-    "update_todo", "todowrite", "todoread", "skill", "exitplanmode", "read_agent",
+    "read_powershell", "list_powershell",
+    "ask_user", "askuserquestion", "report_intent",
+    "todoread", "skill", "exitplanmode", "read_agent",
     "list_agents", "fetch_copilot_cli_documentation",
 })
 ELEVATED_DECISIONS = frozenset({"ask", "defer", "deny"})
@@ -137,7 +137,7 @@ def _patch_paths(text: str) -> Iterator[str]:
 def _write_paths(value: Any, key: str = "", depth: int = 0) -> Iterator[str]:
     """Yield every path a write tool's arguments name, including paths inside patches."""
     if depth > 8:
-        return
+        raise ValueError("write tool payload nesting exceeds maximum inspection depth")
     if isinstance(value, dict):
         for k, v in value.items():
             yield from _write_paths(v, _norm_key(k), depth + 1)
@@ -184,7 +184,22 @@ def map_tool(tool_name: str, args: Any) -> tuple[str, dict[str, Any]]:
         return "execute_command", {"command": _ENTER_KEY_RE.sub("\n", command)}
     if low in WRITE_TOOLS:
         paths = list(dict.fromkeys(_write_paths(args)))
-        return "write_file", {"target_paths": paths} if paths else _as_payload(args)
+        if not paths:
+            return "write_file", _as_payload(args)
+        payload: dict[str, Any] = {"target_paths": paths}
+        if isinstance(args, dict):
+            for k, v in args.items():
+                k_low = str(k).lower()
+                k_norm = _norm_key(k)
+                if (
+                    k_norm in _PATH_ARG_KEYS
+                    or k_norm in _PATCH_ARG_KEYS
+                    or k_low in GovernanceKernel.CONTENT_KEYS
+                    or k_low in ("edits", "new_source")
+                ):
+                    continue
+                payload[k] = v
+        return "write_file", payload
     return name or "unknown_tool", _as_payload(args)
 
 
@@ -442,6 +457,12 @@ def handle_session_start(
 ) -> HookResult:
     snake = _is_snake_case(event)
     session = _boot(event, plugin_root, env)
+    if env.get("AGL_STRICT_LEDGER", "").strip().lower() in ("1", "true", "yes"):
+        report = session.kernel.audit_ledger()
+        if not report["valid"]:
+            raise RuntimeError(
+                f"Ledger hash chain is broken ({report['broken_links']} broken link(s)) under AGL_STRICT_LEDGER"
+            )
     full = env.get("AGL_SESSION_CONTEXT", "").strip().lower() == "full"
     context = render_session_context(session, full=full)
     session.kernel._log_event("HOOK_SESSION_START", {

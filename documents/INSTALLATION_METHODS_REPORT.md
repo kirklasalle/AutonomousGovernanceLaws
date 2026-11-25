@@ -7,7 +7,7 @@
 | **Date** | 2026-11-01 |
 | **Baseline revision** | `1a0f616`; implementation rechecked from `e1b6382` plus the verification fixes below (charter manifest v3.2.1) |
 | **Companion documents** | [WORLD_CLASS_AUDIT_2026-11.md](WORLD_CLASS_AUDIT_2026-11.md) (finding IDs P1–P19), [EXECUTIVE_SUMMARY.md](EXECUTIVE_SUMMARY.md) |
-| **New tool delivered** | [scripts/install_charter.ps1](scripts/install_charter.ps1): byte-exact charter install and verification, tested |
+| **New tool delivered** | [scripts/install_charter.ps1](../scripts/install_charter.ps1): byte-exact charter install and verification, tested |
 | **Method** | Source review, fresh tests, real wheel/sdist installs and protocol subprocess checks. [Persistent verification record](AUDIT_VERIFICATION_2026-11.md). Historical live-session claims in §4.5 are not independently re-established. |
 | **Updated** | 2026-11-02: both routes now ship. `agy-governance init` covers the charter copy, and the repository is an agent plugin, verified live in Copilot CLI (§4.5). One correction from the live trial: Copilot CLI 0.0.410 runs the tool when a hook exits non-zero, so it fails **open**, not closed as §1 and §4.2 originally stated. The shipped plugin returns a JSON deny with exit 0 instead. |
 
@@ -125,7 +125,7 @@ Use the matching file and description in each of the three rules. The `descripti
 
 ### 3.2 Method 1B: as runtime assets (mandatory for the SDK)
 
-`GovernanceKernel` hashes each charter file at boot and compares the result with `config/charter_manifest.json`. It uses SHA-256 over the raw bytes, with CRLF normalised to LF ([kernel.py](src/autonomous_governance/kernel.py), `_compute_sha256`). **Any other byte change is fatal by design (LAW10-CHARTER).**
+`GovernanceKernel` hashes each charter file at boot and compares the result with `config/charter_manifest.json`. It uses SHA-256 over the raw bytes, with CRLF normalised to LF ([kernel.py](../src/autonomous_governance/kernel.py), `_compute_sha256`). **Any other byte change is fatal by design (LAW10-CHARTER).**
 
 #### 3.2.1 Probe: twelve ways of copying, tested against the installed 0.1.0 wheel
 
@@ -399,8 +399,8 @@ with host qualification and signed releases before broader assurance claims.
 
 | ID | Severity | Finding | Evidence | Fix |
 |---|---|---|---|---|
-| **P18** | Medium | Charter file paths from the manifest resolve against the **process CWD**, even when `manifest_path` is absolute. A correctly installed project fails to boot when started from a sub-directory. | [kernel.py](src/autonomous_governance/kernel.py) `_verify_charter_integrity` (`Path(file_name)`); probe S11 | Resolve relative to `manifest_path.parent.parent` or an explicit `project_root` (I2) |
-| **P19** | Medium | **Distribution gap.** The wheel and sdist contain no charter files and no manifest. There is no `init` command, the package is not on PyPI, and the repository is not a plugin. `pip install` alone can never boot. | [pyproject.toml](pyproject.toml) wheel/sdist targets; probes S0, §4.1 | I1, I5, I6, I8 |
+| **P18** | Medium | Charter file paths from the manifest resolve against the **process CWD**, even when `manifest_path` is absolute. A correctly installed project fails to boot when started from a sub-directory. | [kernel.py](../src/autonomous_governance/kernel.py) `_verify_charter_integrity` (`Path(file_name)`); probe S11 | Resolve relative to `manifest_path.parent.parent` or an explicit `project_root` (I2) |
+| **P19** | Medium | **Distribution gap.** The wheel and sdist contain no charter files and no manifest. There is no `init` command, the package is not on PyPI, and the repository is not a plugin. `pip install` alone can never boot. | [pyproject.toml](../pyproject.toml) wheel/sdist targets; probes S0, §4.1 | I1, I5, I6, I8 |
 
 The prototype also confirmed **P4** (11/11 broken links across hook processes) and **P6** (spacing evasion) through a real host-tool path.
 

@@ -8,11 +8,13 @@ on:
 
 jobs:
   verify-charter-and-test:
-    name: Charter Verification & Invariant Tests
-    runs-on: ubuntu-latest
+    name: Charter Verification & Invariant Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.13"]
 
     steps:
       - name: Checkout repository
@@ -27,17 +29,28 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,crypto]"
+          pip install -e ".[dev,crypto]" build
 
       - name: 1. Verify Charter Digest Pinning (LAW10-CHARTER)
         run: |
           python scripts/verify_charter.py
 
-      - name: 2. Run Invariant Test Suite (pytest)
+      - name: 2. Constitutional Linter Strict Gate (laws-lint)
+        run: |
+          laws-lint . --strict
+
+      - name: 3. Run Invariant Test Suite (pytest)
         run: |
           pytest tests/ -v --cov=autonomous_governance
 
-      - name: 3. Verify CLI commands
+      - name: 4. Build & Verify Wheel / Sdist Artifacts
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
+        run: |
+          python -m build
+          python -m pip install --no-deps --force-reinstall dist/*.whl
+          agy-governance init --target /tmp/agl-smoke --loaders --dry-run
+
+      - name: 5. Verify CLI commands
         run: |
           agy-governance status
           agy-governance verify

@@ -13,7 +13,7 @@
     "save", or text copied from rendered Markdown: an added BOM, a trailing newline, a
     changed dash or stripped ** markers all break the pinned hashes.
 
-    See INSTALLATION_METHODS_REPORT.md for the analysis behind this procedure.
+    See documents/INSTALLATION_METHODS_REPORT.md for the analysis behind this procedure.
 
 .PARAMETER Target
     Root directory of the project that will run GovernanceKernel / agy-governance.
@@ -61,19 +61,44 @@ function Get-CharterHash {
     return -join ($digest | ForEach-Object { $_.ToString('x2') })
 }
 
+function Test-SafeRelativePath {
+    param([string]$Rel)
+    if ([string]::IsNullOrWhiteSpace($Rel)) { return $false }
+    $norm = $Rel -replace '\\', '/'
+    if ($norm.StartsWith('/') -or $norm -match '^[A-Za-z]:') { return $false }
+    $parts = $norm.Split('/')
+    if ($parts -contains '..' -or $parts -contains '') { return $false }
+    return $true
+}
+
 function Read-CharterManifest {
     param([string]$Root)
     $path = Join-Path $Root $ManifestRel
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Charter manifest not found: $path"
     }
-    return [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
+    $m = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
+    if ($null -eq $m.charter_files -or @($m.charter_files.PSObject.Properties).Count -eq 0) {
+        throw "Charter manifest lists no charter files: $path"
+    }
+    if ($m.algorithm -and ([string]$m.algorithm).ToUpperInvariant() -ne 'SHA-256') {
+        throw "Unsupported charter hash algorithm: $($m.algorithm)"
+    }
+    foreach ($entry in $m.charter_files.PSObject.Properties) {
+        if (-not (Test-SafeRelativePath $entry.Name)) {
+            throw "Unsafe charter entry path in manifest: $($entry.Name)"
+        }
+    }
+    return $m
 }
 
 function Test-Charter {
     param([string]$Root, $Manifest)
     $results = @()
     foreach ($entry in $Manifest.charter_files.PSObject.Properties) {
+        if (-not (Test-SafeRelativePath $entry.Name)) {
+            throw "Unsafe charter entry path in manifest: $($entry.Name)"
+        }
         $path = Join-Path $Root $entry.Name
         $expected = ([string]$entry.Value).ToLowerInvariant()
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
@@ -101,9 +126,11 @@ if (-not $VerifyOnly) {
     }
 
     $files = @($sourceManifest.charter_files.PSObject.Properties | ForEach-Object { $_.Name }) + $ManifestRel
+    $plan = @()
     foreach ($rel in $files) {
         $src = Join-Path $Source $rel
         $dst = Join-Path $Target $rel
+        $action = 'copy'
         if (Test-Path -LiteralPath $dst -PathType Leaf) {
             $same = (Get-FileHash -LiteralPath $src -Algorithm SHA256).Hash -eq (Get-FileHash -LiteralPath $dst -Algorithm SHA256).Hash
             if (-not $same -and $rel -ne $ManifestRel) {
@@ -111,19 +138,26 @@ if (-not $VerifyOnly) {
                 $same = (Get-CharterHash -Path $dst) -eq $expected
             }
             if ($same) {
-                Write-Host "  present   $rel"
-                continue
-            }
-            if (-not $Force) {
+                $action = 'present'
+            } elseif ($Force) {
+                $action = 'copy'
+            } else {
                 throw "$dst already exists and differs from the pinned charter. Re-run with -Force to replace it."
             }
         }
-        $dstDir = Split-Path -Parent $dst
+        $plan += [pscustomobject]@{ Rel = $rel; Src = $src; Dst = $dst; Action = $action }
+    }
+    foreach ($item in $plan) {
+        if ($item.Action -eq 'present') {
+            Write-Host "  present   $($item.Rel)"
+            continue
+        }
+        $dstDir = Split-Path -Parent $item.Dst
         if (-not (Test-Path -LiteralPath $dstDir)) {
             New-Item -ItemType Directory -Path $dstDir | Out-Null
         }
-        Copy-Item -LiteralPath $src -Destination $dst -Force
-        Write-Host "  copied    $rel"
+        Copy-Item -LiteralPath $item.Src -Destination $item.Dst -Force
+        Write-Host "  copied    $($item.Rel)"
     }
 }
 

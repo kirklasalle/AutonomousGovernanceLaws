@@ -106,3 +106,48 @@ def test_linter_ignores_markdown_code_fences():
     finally:
         path.unlink(missing_ok=True)
 
+
+def test_linter_canonical_law_names_and_single_line_backtick_and_ast(tmp_path):
+    from autonomous_governance.linter import LAWS
+
+    assert "Cross-System" in LAWS[4]["name"]
+    assert "Equity" in LAWS[8]["name"]
+
+    md = tmp_path / "trap.md"
+    md.write_text("Inline ```code``` check\nThen run rm -rf /\n", encoding="utf-8")
+    res_md = GovernanceLinter(md).run()
+    assert res_md["critical"] >= 1
+
+    py_file = tmp_path / "danger.py"
+    py_file.write_text(
+        "import shutil, subprocess\n"
+        "def wipe(p):\n"
+        "    shutil.rmtree(p)\n"
+        "    subprocess.run('echo hi', shell=True)\n",
+        encoding="utf-8",
+    )
+    res_py = GovernanceLinter(py_file).run()
+    rule_ids = {f["rule_id"] for f in res_py["findings"]}
+    assert {"AGL-101", "AGL-501"} <= rule_ids
+
+
+def test_verify_charter_script_rejects_empty_and_traversal(tmp_path):
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "verify_charter", Path(__file__).resolve().parents[1] / "scripts" / "verify_charter.py"
+    )
+    vc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(vc)
+
+    (tmp_path / "config").mkdir()
+    manifest = tmp_path / "config" / "charter_manifest.json"
+    manifest.write_text('{"version": "1", "algorithm": "SHA-256", "charter_files": {}}', encoding="utf-8")
+    assert vc.verify_charter(tmp_path) is False
+
+    manifest.write_text('{"version": "1", "algorithm": "MD5", "charter_files": {"a.txt": "0"}}', encoding="utf-8")
+    assert vc.verify_charter(tmp_path) is False
+
+    manifest.write_text('{"version": "1", "algorithm": "SHA-256", "charter_files": {"../etc/passwd": "0"}}', encoding="utf-8")
+    assert vc.verify_charter(tmp_path) is False
+

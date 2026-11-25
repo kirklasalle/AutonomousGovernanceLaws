@@ -5,6 +5,7 @@ the EU AI Act (Articles 9-15), and the NIST AI RMF 1.0.
 Author: Kirk LaSalle & Antigravity AI
 """
 
+import ast
 import os
 import sys
 import re
@@ -12,18 +13,18 @@ import argparse
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
 
-# The 10 Permanent Active Directives (Canonical Laws)
+# The 10 Permanent Active Directives (Canonical Laws from Permanent_Active_Directives.txt)
 LAWS = {
-    1: {"name": "Law 1: Prohibition of Irreversible Human/System Harm", "severity": "CRITICAL"},
-    2: {"name": "Law 2: Absolute Operator Halt & Sovereign Override", "severity": "CRITICAL"},
-    3: {"name": "Law 3: Sovereign Sandboxing & Local Boundary Isolation", "severity": "HIGH"},
-    4: {"name": "Law 4: Adherence to Open Standards & Non-Proprietary Interop", "severity": "MEDIUM"},
-    5: {"name": "Law 5: Deterministic Tool Bounds & Explicit Privilege Escalation", "severity": "HIGH"},
-    6: {"name": "Law 6: Data Loss Prevention & Mandatory Pre-Delete Confirmation", "severity": "CRITICAL"},
-    7: {"name": "Law 7: Transparency of Agent Identity & Non-Deception", "severity": "MEDIUM"},
-    8: {"name": "Law 8: Empirical Physical Grounding & Mathematical Rigor", "severity": "LOW"},
-    9: {"name": "Law 9: Cryptographic Hash Chaining & Immutable Action Ledger", "severity": "HIGH"},
-    10: {"name": "Law 10: Sovereign Operator Supremacy & Non-Self-Clearing Gates", "severity": "CRITICAL"}
+    1: {"name": "Law 1: Non-Harm and Human Preservation", "severity": "CRITICAL"},
+    2: {"name": "Law 2: Obedience to Human Operators", "severity": "CRITICAL"},
+    3: {"name": "Law 3: Subordinate Self-Protection", "severity": "HIGH"},
+    4: {"name": "Law 4: Cross-System Law Enforcement", "severity": "HIGH"},
+    5: {"name": "Law 5: Prohibition of Judicial Authority", "severity": "HIGH"},
+    6: {"name": "Law 6: Information Integrity and Privacy", "severity": "CRITICAL"},
+    7: {"name": "Law 7: Truthfulness and Non-Deception", "severity": "MEDIUM"},
+    8: {"name": "Law 8: Strict Equity and Neutrality", "severity": "MEDIUM"},
+    9: {"name": "Law 9: Transparent Auditable Reasoning Ledger", "severity": "HIGH"},
+    10: {"name": "Law 10: Operational Boundaries and Non-Replication", "severity": "CRITICAL"},
 }
 
 # Detection rules for dangerous anti-patterns
@@ -44,10 +45,10 @@ VIOLATION_PATTERNS = [
         "msg": "Directive attempting to bypass or suppress operator halt commands.",
         "severity": "CRITICAL"
     },
-    # Law 5: Unbounded shell execution
+    # Law 1 & 10: Unbounded dynamic shell/code execution
     {
         "id": "AGL-501",
-        "law": 5,
+        "law": 10,
         "regex": r"(?:\beval\s*\(|\bexec\s*\(|os\.system\([^)]*\$|subprocess\.Popen\([^)]*shell\s*=\s*True)",
         "msg": "Unsanitized dynamic shell/string evaluation exposes agent to prompt-injection escape.",
         "severity": "HIGH"
@@ -76,6 +77,72 @@ class GovernanceLinter:
         self.findings: List[Dict[str, Any]] = []
         self.files_scanned = 0
 
+    def _add_finding(
+        self, rule_id: str, law: int, severity: str, file_path: Path, line_no: int, snippet: str, message: str
+    ) -> None:
+        self.findings.append({
+            "rule_id": rule_id,
+            "law": law,
+            "law_name": LAWS[law]["name"],
+            "severity": severity,
+            "file": str(file_path),
+            "line": line_no,
+            "snippet": snippet[:100],
+            "message": message,
+        })
+
+    def _scan_python_ast(self, file_path: Path, lines: list[str], seen: set[tuple[str, int]]) -> None:
+        try:
+            tree = ast.parse("".join(lines), filename=str(file_path))
+        except SyntaxError:
+            return
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            line_no = getattr(node, "lineno", 0)
+            if line_no <= 0 or line_no > len(lines):
+                continue
+            line_text = lines[line_no - 1]
+            if "laws-lint: ignore" in line_text:
+                continue
+            func = node.func
+            call_name = ""
+            if isinstance(func, ast.Name):
+                call_name = func.id
+            elif isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
+                call_name = f"{func.value.id}.{func.attr}"
+
+            rule_info: tuple[str, int, str, str] | None = None
+            if call_name in ("eval", "exec", "os.system"):
+                rule_info = (
+                    "AGL-501", 10, "HIGH",
+                    "Unsanitized dynamic shell/code evaluation exposes agent to injection escape.",
+                )
+            elif call_name == "shutil.rmtree":
+                rule_info = (
+                    "AGL-101", 1, "CRITICAL",
+                    "Recursive directory deletion (`shutil.rmtree`) detected without protective guard.",
+                )
+            elif call_name in (
+                "subprocess.run", "subprocess.Popen", "subprocess.call",
+                "subprocess.check_call", "subprocess.check_output",
+            ):
+                if any(
+                    kw.arg == "shell" and isinstance(kw.value, ast.Constant) and kw.value.value is True
+                    for kw in node.keywords
+                ):
+                    rule_info = (
+                        "AGL-501", 10, "HIGH",
+                        "Subprocess invocation with shell=True exposes agent to command injection.",
+                    )
+
+            if rule_info and (rule_info[0], line_no) not in seen:
+                seen.add((rule_info[0], line_no))
+                self._add_finding(
+                    rule_info[0], rule_info[1], rule_info[2],
+                    file_path, line_no, line_text.strip(), rule_info[3],
+                )
+
     def scan_file(self, file_path: Path):
         self.files_scanned += 1
         try:
@@ -85,29 +152,40 @@ class GovernanceLinter:
             return
 
         is_markdown = file_path.suffix.lower() in {".md", ".markdown"}
-        in_code_block = False
+        fence_char = ""
+        fence_len = 0
+        seen: set[tuple[str, int]] = set()
 
         for line_no, line in enumerate(lines, 1):
             if is_markdown:
-                stripped = line.strip()
-                if stripped.startswith("```"):
-                    in_code_block = not in_code_block
+                stripped = line.lstrip()
+                if not fence_char:
+                    m_open = re.match(r"^(`{3,}|~{3,})(.*)$", stripped)
+                    if m_open:
+                        marker, rest = m_open.group(1), m_open.group(2)
+                        if not (marker[0] == "`" and "`" in rest):
+                            fence_char = marker[0]
+                            fence_len = len(marker)
+                            continue
+                else:
+                    if re.match(rf"^{re.escape(fence_char)}{{{fence_len},}}\s*$", stripped):
+                        fence_char = ""
+                        fence_len = 0
                     continue
-                if in_code_block:
-                    continue
+
+            if "laws-lint: ignore" in line:
+                continue
 
             for rule in VIOLATION_PATTERNS:
                 if re.search(rule["regex"], line, re.IGNORECASE):
-                    self.findings.append({
-                        "rule_id": rule["id"],
-                        "law": rule["law"],
-                        "law_name": LAWS[rule["law"]]["name"],
-                        "severity": rule["severity"],
-                        "file": str(file_path),
-                        "line": line_no,
-                        "snippet": line.strip()[:100],
-                        "message": rule["msg"]
-                    })
+                    seen.add((rule["id"], line_no))
+                    self._add_finding(
+                        rule["id"], rule["law"], rule["severity"],
+                        file_path, line_no, line.strip(), rule["msg"],
+                    )
+
+        if file_path.suffix.lower() == ".py":
+            self._scan_python_ast(file_path, lines, seen)
 
     def run(self) -> Dict[str, Any]:
         if self.target_path.is_file():
@@ -121,7 +199,7 @@ class GovernanceLinter:
                         # Skip self-inspection of the governance rule definitions
                         continue
                     ext = os.path.splitext(file)[1].lower()
-                    if ext in {".py", ".ts", ".tsx", ".js", ".json", ".md", ".txt", ".sh", ".bat", ".toml", ".yaml", ".yml"}:
+                    if ext in {".py", ".ts", ".tsx", ".js", ".json", ".md", ".txt", ".sh", ".bat", ".ps1", ".toml", ".yaml", ".yml"}:
                         self.scan_file(Path(root) / file)
 
         critical_count = sum(1 for f in self.findings if f["severity"] == "CRITICAL")

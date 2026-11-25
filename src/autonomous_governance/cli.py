@@ -61,8 +61,9 @@ def cmd_verify(args: argparse.Namespace) -> int:
 
 
 def cmd_audit_ledger(args: argparse.Namespace) -> int:
-    """Audit the event ledger hash chain."""
-    from autonomous_governance.kernel import GovernanceKernel
+    """Audit the event ledger hash chain and optional signed checkpoint."""
+    from autonomous_governance.kernel import GovernanceKernel, resolve_project_root
+    from autonomous_governance.security import verify_ledger_checkpoint
 
     kernel = GovernanceKernel.__new__(GovernanceKernel)
     kernel.ledger_path = Path(args.ledger)
@@ -84,12 +85,48 @@ def cmd_audit_ledger(args: argparse.Namespace) -> int:
         if len(result['errors']) > 10:
             print(f"  ... and {len(result['errors']) - 10} more errors")
 
+    checkpoint_arg = getattr(args, "checkpoint", None)
+    if checkpoint_arg:
+        cp_path = Path(checkpoint_arg)
+        if not cp_path.exists():
+            print(f"  ❌ Checkpoint file not found: {cp_path}")
+            return 1
+        try:
+            checkpoint = json.loads(cp_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            print(f"  ❌ Checkpoint unreadable: {exc}")
+            return 1
+        pub_arg = getattr(args, "pubkey", None)
+        if pub_arg:
+            pub_path = Path(pub_arg)
+        else:
+            root = resolve_project_root(getattr(args, "manifest", "config/charter_manifest.json"))
+            pub_path = root / ".keys" / "operator.pub"
+        if not pub_path.exists():
+            print(f"  ❌ Operator public key not found for checkpoint verification: {pub_path}")
+            return 1
+        raw_pub = pub_path.read_bytes()
+        pub_bytes = raw_pub if len(raw_pub) == 32 else bytes.fromhex(raw_pub.decode("ascii").strip())
+        ok, reason = verify_ledger_checkpoint(checkpoint, pub_bytes)
+        if not ok:
+            print(f"  ❌ Checkpoint signature invalid: {reason}")
+            return 1
+        head_hash, _ = kernel._read_tail()
+        if result["total_events"] != checkpoint["event_count"] or head_hash != checkpoint["head_hash"]:
+            print(
+                f"  ❌ Checkpoint mismatch (ledger={result['total_events']} events / {head_hash[:12]}..., "
+                f"checkpoint={checkpoint['event_count']} events / {checkpoint['head_hash'][:12]}...)"
+            )
+            return 1
+        print(f"  ✅ Checkpoint: Verified ({checkpoint['event_count']} events)")
+
     return 0 if result['valid'] else 1
 
 
 def cmd_status(args: argparse.Namespace) -> int:
     """Show governance kernel status and cryptographic health."""
-    from autonomous_governance.security import DPAPIKeyStore
+    from autonomous_governance.kernel import resolve_project_root
+    from autonomous_governance.security import DPAPIKeyStore, _HAS_CRYPTOGRAPHY
 
     print("=" * 68)
     print("  AUTONOMOUS GOVERNANCE LAWS — STATUS")
@@ -97,35 +134,46 @@ def cmd_status(args: argparse.Namespace) -> int:
     print()
 
     manifest_path = Path(args.manifest)
+    project_root = resolve_project_root(manifest_path) if manifest_path.exists() else Path.cwd()
     if manifest_path.exists():
         with open(manifest_path, "r", encoding="utf-8") as f:
             manifest = json.load(f)
         print(f"  Manifest Version:   {manifest.get('version', 'unknown')}")
         print(f"  Charter Files:      {len(manifest.get('charter_files', {}))}")
         print(f"  Operator:           {manifest.get('operator', {}).get('name', 'unknown')}")
+        sig_path = manifest_path.with_suffix(".sig")
+        print(f"  Manifest Signature: {'🟢 Present' if sig_path.exists() else '⚪ Not signed'}")
     else:
         print(f"  ⚠ Manifest not found: {manifest_path}")
 
     ledger_path = Path(args.ledger)
     if ledger_path.exists():
-        line_count = sum(1 for line in open(ledger_path) if line.strip())
+        with open(ledger_path, "r", encoding="utf-8", errors="replace") as f:
+            line_count = sum(1 for line in f if line.strip())
         print(f"  Ledger Events:      {line_count}")
     else:
-        print(f"  Ledger:             Not initialized")
+        print("  Ledger:             Not initialized")
 
-    halt_file = Path(".halt")
+    halt_file = project_root / ".halt"
+    if not halt_file.exists() and Path(".halt").exists():
+        halt_file = Path(".halt")
     print(f"  Halt Status:        {'🔴 ACTIVE' if halt_file.exists() else '🟢 Normal'}")
 
     # Cryptographic / Hardware Security Status
     dpapi_avail = DPAPIKeyStore.is_dpapi_available()
     print(f"  Windows DPAPI:      {'🟢 Available (Hardware Bound)' if dpapi_avail else '⚪ Not Available / POSIX Mode'}")
+    print(
+        f"  Ed25519 Backend:    {'🟢 cryptography/OpenSSL (constant-time)' if _HAS_CRYPTOGRAPHY else '⚠ Pure-Python fallback (non-constant-time)'}"
+    )
 
-    keys_dir = Path(".keys")
+    keys_dir = project_root / ".keys"
+    if not (keys_dir / "operator.pub").exists() and Path(".keys/operator.pub").exists():
+        keys_dir = Path(".keys")
     operator_pub = keys_dir / "operator.pub"
     if operator_pub.exists():
-        print(f"  Operator Pubkey:    🟢 Found ({operator_pub.read_text().strip()[:16]}...)")
+        print(f"  Operator Pubkey:    🟢 Found ({operator_pub.read_text(encoding='utf-8').strip()[:16]}...)")
     else:
-        print(f"  Operator Pubkey:    ⚪ None configured (run 'agy-governance keygen')")
+        print("  Operator Pubkey:    ⚪ None configured (run 'agy-governance keygen')")
 
     print()
     return 0
@@ -160,62 +208,78 @@ def cmd_badge(args: argparse.Namespace) -> int:
 
 
 def cmd_keygen(args: argparse.Namespace) -> int:
-    """Generate Ed25519 operator keypair with optional DPAPI hardware protection."""
-    from autonomous_governance.security import generate_ed25519_keypair, DPAPIKeyStore
+    """Generate Ed25519 operator keypair with optional DPAPI/passphrase protection."""
+    from autonomous_governance.security import generate_ed25519_keypair, DPAPIKeyStore, _HAS_AESGCM
 
     out_dir = Path(args.out) if args.out else Path(".keys")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    priv_seed, pub_key = generate_ed25519_keypair()
-
     pub_file = out_dir / "operator.pub"
-    pub_file.write_text(pub_key.hex(), encoding="utf-8")
-
     key_filename = "operator.dpapi.key" if args.dpapi else "operator.key"
     key_file = out_dir / key_filename
-    DPAPIKeyStore.save_key(key_file, priv_seed, use_dpapi=args.dpapi)
+    force = bool(getattr(args, "force", False))
+
+    if not force and (pub_file.exists() or key_file.exists()):
+        existing = [str(p) for p in (pub_file, key_file) if p.exists()]
+        print(f"  ❌ Key file(s) already exist: {', '.join(existing)}. Pass --force to overwrite.")
+        return 1
+
+    priv_seed, pub_key = generate_ed25519_keypair()
+    allow_plain = bool(getattr(args, "allow_plaintext", False))
+    try:
+        DPAPIKeyStore.save_key(
+            key_file,
+            priv_seed,
+            use_dpapi=args.dpapi,
+            allow_plaintext_fallback=allow_plain,
+        )
+    except (OSError, RuntimeError, ValueError) as exc:
+        print(f"  ❌ Could not store operator private key: {exc}")
+        return 1
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    pub_file.write_text(pub_key.hex(), encoding="utf-8")
 
     print("=" * 68)
     print("  OPERATOR ASYMMETRIC KEYPAIR GENERATION — Ed25519")
     print("=" * 68)
     print(f"  Public Key:    {pub_file} ({pub_key.hex()[:16]}...)")
     print(f"  Private Key:   {key_file}")
-    dpapi_status = "Enabled (Windows Hardware-Tied DPAPI)" if (args.dpapi and DPAPIKeyStore.is_dpapi_available()) else "Standard File Protection"
+    if args.dpapi and DPAPIKeyStore.is_dpapi_available():
+        dpapi_status = "Enabled (Windows Hardware-Tied DPAPI)"
+    elif args.dpapi and not allow_plain:
+        dpapi_status = "POSIX Passphrase Encrypted (PBKDF2-600k + " + ("AES-256-GCM)" if _HAS_AESGCM else "HMAC-CTR)")
+    else:
+        dpapi_status = "Unencrypted (0600 permissions)"
     print(f"  Protection:    {dpapi_status}")
     print()
     return 0
 
 
+def _load_seed_from_cli(key_path: Path) -> bytes:
+    from autonomous_governance.security import DPAPIKeyStore
+
+    if not key_path.exists():
+        raise FileNotFoundError(f"Operator key file not found: {key_path}")
+    is_dpapi = ".dpapi" in key_path.name
+    priv_seed = DPAPIKeyStore.load_key(key_path, is_dpapi=is_dpapi)
+    if len(priv_seed) != 32:
+        raise ValueError(
+            f"Operator key must be a 32-byte Ed25519 seed (got {len(priv_seed)} bytes): {key_path}"
+        )
+    return priv_seed
+
+
 def cmd_approve(args: argparse.Namespace) -> int:
     """Sign an elevated action to generate a single-use authorization token."""
-    from autonomous_governance.security import create_approval_token, DPAPIKeyStore
+    from autonomous_governance.security import create_approval_token, derive_ed25519_public_key
 
     key_path = Path(args.key)
-    if not key_path.exists():
-        print(f"  ❌ Operator key file not found: {key_path}")
-        return 1
-
-    is_dpapi = ".dpapi" in key_path.name
     try:
-        priv_seed = DPAPIKeyStore.load_key(key_path, is_dpapi=is_dpapi)
-    except (OSError, RuntimeError) as exc:
+        priv_seed = _load_seed_from_cli(key_path)
+    except (OSError, RuntimeError, ValueError) as exc:
         print(f"  ❌ Could not load operator key {key_path}: {exc}")
         return 1
-    if len(priv_seed) != 32:
-        print(f"  ❌ Operator key must be a 32-byte Ed25519 seed (got {len(priv_seed)} bytes): {key_path}")
-        return 1
 
-    # Derive public key or load from .pub
-    pub_path = key_path.with_name("operator.pub")
-    if pub_path.exists():
-        pub_key = bytes.fromhex(pub_path.read_text().strip())
-    else:
-        from autonomous_governance.security import _scalar_mult, _B, _point_to_bytes
-        import hashlib
-        h = hashlib.sha512(priv_seed).digest()
-        a = int.from_bytes(h[:32], "little")
-        a &= (1 << 254) - 8
-        a |= (1 << 254)
-        pub_key = _point_to_bytes(_scalar_mult(_B, a))
+    pub_key = derive_ed25519_public_key(priv_seed)
 
     payload = {}
     if args.payload:
@@ -228,6 +292,7 @@ def cmd_approve(args: argparse.Namespace) -> int:
             except Exception:
                 payload = {"raw": args.payload}
 
+    scope = getattr(args, "scope", None)
     try:
         token = create_approval_token(
             action_id=args.action_id,
@@ -236,6 +301,7 @@ def cmd_approve(args: argparse.Namespace) -> int:
             private_seed=priv_seed,
             public_key=pub_key,
             ttl_seconds=args.ttl,
+            scope=scope,
         )
     except ValueError as exc:
         print(f"  ❌ Could not create approval token: {exc}")
@@ -249,6 +315,62 @@ def cmd_approve(args: argparse.Namespace) -> int:
         print(f"  ✅ Approval token written to: {out_path}")
     else:
         print(token_json)
+    return 0
+
+
+def cmd_sign_manifest(args: argparse.Namespace) -> int:
+    """Create a detached Ed25519 signature for charter_manifest.json."""
+    from autonomous_governance.security import sign_manifest
+
+    manifest_path = Path(args.manifest)
+    if not manifest_path.is_file():
+        print(f"  ❌ Charter manifest not found: {manifest_path}")
+        return 1
+    key_path = Path(args.key)
+    try:
+        priv_seed = _load_seed_from_cli(key_path)
+    except (OSError, RuntimeError, ValueError) as exc:
+        print(f"  ❌ Could not load operator key {key_path}: {exc}")
+        return 1
+    out_path = Path(args.out) if args.out else manifest_path.with_suffix(".sig")
+    sig_hex = sign_manifest(manifest_path, priv_seed, sig_path=out_path)
+    print(f"  ✅ Signed manifest {manifest_path} -> {out_path} ({sig_hex[:16]}...)")
+    return 0
+
+
+def cmd_checkpoint(args: argparse.Namespace) -> int:
+    """Sign a tamper-evident checkpoint over the current ledger head."""
+    from autonomous_governance.kernel import GovernanceKernel
+    from autonomous_governance.security import sign_ledger_checkpoint
+
+    key_path = Path(args.key)
+    try:
+        priv_seed = _load_seed_from_cli(key_path)
+    except (OSError, RuntimeError, ValueError) as exc:
+        print(f"  ❌ Could not load operator key {key_path}: {exc}")
+        return 1
+
+    kernel = GovernanceKernel.__new__(GovernanceKernel)
+    kernel.ledger_path = Path(args.ledger)
+    report = kernel.audit_ledger()
+    if not report["valid"]:
+        print(f"  ❌ Cannot checkpoint broken ledger ({report['broken_links']} broken link(s))")
+        return 1
+    head_hash, _ = kernel._read_tail()
+    checkpoint = sign_ledger_checkpoint(
+        event_count=report["total_events"],
+        head_hash=head_hash,
+        private_seed=priv_seed,
+        scope=getattr(args, "scope", "") or "",
+    )
+    cp_json = json.dumps(checkpoint, indent=2)
+    if args.out:
+        out_path = Path(args.out)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(cp_json, encoding="utf-8")
+        print(f"  ✅ Signed ledger checkpoint written to: {out_path} ({report['total_events']} events)")
+    else:
+        print(cp_json)
     return 0
 
 
@@ -339,7 +461,9 @@ def main() -> None:
     p_init.add_argument("--dry-run", action="store_true", help="Show the plan without writing anything")
 
     # audit-ledger
-    subparsers.add_parser("audit-ledger", help="Audit event ledger hash chain (LAW9-CHAIN)")
+    p_audit = subparsers.add_parser("audit-ledger", help="Audit event ledger hash chain (LAW9-CHAIN)")
+    p_audit.add_argument("--checkpoint", help="Optional signed checkpoint JSON file to verify against tail")
+    p_audit.add_argument("--pubkey", help="Operator public key for checkpoint verification")
 
     # status
     subparsers.add_parser("status", help="Show governance kernel status")
@@ -353,7 +477,12 @@ def main() -> None:
     # keygen
     p_keygen = subparsers.add_parser("keygen", help="Generate operator Ed25519 keypair")
     p_keygen.add_argument("--out", default=".keys", help="Output directory for keypair")
-    p_keygen.add_argument("--dpapi", action="store_true", help="Encrypt private key with Windows DPAPI")
+    p_keygen.add_argument("--dpapi", action="store_true", help="Encrypt private key with DPAPI or POSIX passphrase")
+    p_keygen.add_argument("--force", action="store_true", help="Overwrite existing key files")
+    p_keygen.add_argument(
+        "--allow-plaintext", action="store_true",
+        help="Allow unencrypted POSIX fallback marker when AGL_KEY_PASSPHRASE is unset",
+    )
 
     # approve
     p_approve = subparsers.add_parser("approve", help="Generate single-use signed authorization token")
@@ -362,7 +491,19 @@ def main() -> None:
     p_approve.add_argument("--payload", default="{}", help="Tool argument payload (JSON string or file path)")
     p_approve.add_argument("--key", default=".keys/operator.key", help="Path to operator private key")
     p_approve.add_argument("--ttl", type=int, default=300, help="Token validity lifetime in seconds")
+    p_approve.add_argument("--scope", help="Optional domain scope string to emit an AGL-V2 token")
     p_approve.add_argument("--out", help="Output path for token JSON file")
+
+    # sign-manifest
+    p_sign_manifest = subparsers.add_parser("sign-manifest", help="Sign charter_manifest.json with Ed25519")
+    p_sign_manifest.add_argument("--key", default=".keys/operator.key", help="Path to operator private key")
+    p_sign_manifest.add_argument("--out", help="Output .sig path (default: <manifest>.sig)")
+
+    # checkpoint
+    p_checkpoint = subparsers.add_parser("checkpoint", help="Sign a tamper-evident ledger head checkpoint")
+    p_checkpoint.add_argument("--key", default=".keys/operator.key", help="Path to operator private key")
+    p_checkpoint.add_argument("--scope", default="", help="Optional domain scope bound into checkpoint")
+    p_checkpoint.add_argument("--out", help="Output path for checkpoint JSON file")
 
     args = parser.parse_args()
 
@@ -374,6 +515,8 @@ def main() -> None:
         "badge": cmd_badge,
         "keygen": cmd_keygen,
         "approve": cmd_approve,
+        "sign-manifest": cmd_sign_manifest,
+        "checkpoint": cmd_checkpoint,
     }
 
     sys.exit(commands[args.command](args))

@@ -16,7 +16,7 @@ There are three ways to install. [`INSTALLATION_METHODS_REPORT.md`](INSTALLATION
 | Method | Command | What you get | Enforced? |
 |---|---|---|---|
 | **Charter copy** | `agy-governance init --target <project> [--loaders]` | The three pinned charter documents and the manifest, verified byte for byte. `--loaders` adds `AGENTS.md`, `CLAUDE.md` and `.agents/rules/` so agents read the charter. | **No.** The agent is asked to follow the charter but nothing stops it. |
-| **Agent plugin** | `copilot plugin install kirklasalle/AutonomousGovernanceLaws` (or a local clone path; see [README §1b](README.md) for Claude Code) | Every tool call the agent makes is checked by the kernel before it runs. Destructive commands and changes to governance state are denied, other changes ask you first, and every decision is ledgered. | **Yes**, for the tool calls the host routes through hooks. |
+| **Agent plugin** | `copilot plugin install kirklasalle/AutonomousGovernanceLaws` (or a local clone path; see [README §1b](../README.md) for Claude Code) | Every tool call the agent makes is checked by the kernel before it runs. Destructive commands and changes to governance state are denied, other changes ask you first, and every decision is ledgered. | **Yes**, for the tool calls the host routes through hooks. |
 | **SDK embedding** | `GovernanceKernel(...)` in your own runtime ([`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md)) | Full control, including signed approval tokens (§3). | **Yes**, for calls your runtime routes through the kernel. |
 
 > [!WARNING]

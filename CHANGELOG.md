@@ -4,7 +4,24 @@ All notable changes to the Autonomous Governance Laws framework, constitutional 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-11-01
+## [Unreleased] - 2026-11-25
+
+Post-audit security hardening (Phases 1–3 of the November 2026 Principal-Engineer Due-Diligence Roadmap):
+
+### Added
+- **Domain-scoped `AGL-V2` approval tokens (`security.py`, `kernel.py`, `cli.py --scope`)**: binds `scope` (defaulting to a hash of `project_root` and `charter_manifest.json`) into the signed canonical message to prevent cross-project token replay while retaining backwards-compatible `AGL-V1` support (`require_v2_tokens=True` enforces V2-only).
+- **Detached charter manifest signatures (`sign_manifest`, `verify_manifest_signature`, `agy-governance sign-manifest`)**: optional Ed25519 `.sig` verification at boot (`require_manifest_signature=True` enforces strict mode).
+- **Signed ledger head checkpoints (`create_checkpoint`, `verify_checkpoint`, `agy-governance checkpoint`, `audit-ledger --checkpoint`)**: detects ledger tail truncation and wholesale chain rewrites (`P17`).
+- **O(1) SQLite replay store (`.ledger/events.jsonl.replay.db`)**: decouples single-use `action_id` replay prevention from ledger archival/rotation (`SEC-01`) and protects the replay DB under `LAW3-SUBORDINATE`.
+- **R&D Continuation Document**: [`documents/RD_ROADMAP_AND_ARCHITECTURE.md`](documents/RD_ROADMAP_AND_ARCHITECTURE.md).
+
+### Security & Fixed
+- **POSIX keystore V2 AEAD (`CRIT-01`)**: upgraded to 600,000 PBKDF2-HMAC-SHA256 iterations with `AES-256-GCM` (when `cryptography` is installed) or HMAC-SHA256 CTR fallback, keeping legacy V1 decryption compatible. POSIX key generation now fails closed when `AGL_KEY_PASSPHRASE` is unset unless `--allow-plaintext` is passed; `cmd_approve` handles `ValueError` cleanly.
+- **Ed25519 hardening (`CRIT-02`)**: `ed25519_sign` and `cmd_approve` always derive/verify the public key from the private seed; `ed25519_verify` and kernel boot reject identity and small-order Ed25519 points; Windows `ctypes` DPAPI calls declare explicit 64-bit `argtypes`/`restype` (`NOV-06`).
+- **Classifier & hook bypasses (`SEC-02`, `SEC-03`)**: `SAFE_TOOLS` scans all non-pattern keys, `.pem` files, and resolved symlinks for secrets; `web_fetch`/`todowrite` moved to `ELEVATED`; payload nesting depth overflow fails closed (`PROHIBITED`); `CONTENT_KEYS` skipping scoped to file-write tools; `WRITE_TOOLS` preserves non-content extra keys; `powershell -EncodedCommand` and `git` global flags are inspected; `AGL_STRICT_LEDGER=1` blocks broken ledgers at `SessionStart`.
+- **Verification & hygiene (`SEC-04`, `SEC-05`, `SEC-06`, `ARCH-01`, `ARCH-02`, `ARCH-03`)**: XML-escaped SVG badges; rejected empty/non-SHA-256/traversal manifests in `scripts/verify_charter.py` and `scripts/install_charter.ps1`; canonicalized `laws-lint` 10 Laws titles, fixed CommonMark fence state machine, and added Python AST checks; resolved default `ledger_path`/`halt_file` relative to `project_root` (`P9`); guarded `cmd_keygen` against silent overwrite without `--force`; added Windows + `laws-lint --strict` + wheel smoke checks to CI; purged stale `dist/` artifacts and removed `.nexus_briefing.md`.
+
+## [Unreleased - Prior Baseline] - 2026-11-01
 
 Runtime hardening (P0 defects from the audit), the `init` installer, an agent plugin for Copilot CLI, VS Code and Claude Code, plus documentation and tooling. The charter documents and `config/charter_manifest.json` are unchanged (digests v3.2.1 still verify).
 
@@ -36,11 +53,11 @@ Runtime hardening (P0 defects from the audit), the `init` installer, an agent pl
 - **Host loaders for this repository**: `AGENTS.md` (with a contributor section), `CLAUDE.md`, and `.agents/rules/`. They are generated from `src/autonomous_governance/loaders.py`, and a test fails if they drift.
 - **`tests/test_hardening.py`**: regression tests for every fix above, including a 3-process concurrent-append test and a parametrised classifier battery. **`tests/test_init.py`**: installer, CLI, loader-drift and packaging tests.
 - Public API: `check_charter_files`, `CharterCheck`, `resolve_project_root`, `install_charter`, `charter_source`, `CharterSourceError`, `render_loaders`.
-- **[`WORLD_CLASS_AUDIT_2026-11.md`](WORLD_CLASS_AUDIT_2026-11.md)**: evidence-based engineering audit.
+- **[`WORLD_CLASS_AUDIT_2026-11.md`](documents/WORLD_CLASS_AUDIT_2026-11.md)**: evidence-based engineering audit.
   - Reproducible rubric; composite score **39/100** (≈70 projected after P0/P1).
   - 19 probe-backed findings (P1–P19).
   - November 2026 market position with a citation register, standards mapping, and remediation roadmap.
-- **[`INSTALLATION_METHODS_REPORT.md`](INSTALLATION_METHODS_REPORT.md)**: analysis of two installation routes, copying the three charter documents vs. installing as a plugin.
+- **[`INSTALLATION_METHODS_REPORT.md`](documents/INSTALLATION_METHODS_REPORT.md)**: analysis of two installation routes, copying the three charter documents vs. installing as a plugin.
   - Per-host instruction loaders (Copilot `AGENTS.md`, Claude `CLAUDE.md`, Antigravity rules).
   - Twelve-scenario byte-exactness probe.
   - Tested agent-plugin prototype for Copilot CLI (`sessionStart` charter injection, `preToolUse` enforcement).
@@ -74,18 +91,18 @@ Runtime hardening (P0 defects from the audit), the `init` installer, an agent pl
 - The sdist now includes the plugin tree (`hooks/`, `skills/`, `.plugin/`, `.github/plugin/`, `.claude-plugin/`).
 
 ### Changed
-- **[`EXECUTIVE_SUMMARY.md`](EXECUTIVE_SUMMARY.md) v3.0.0**: the 93.4 score is withdrawn.
+- **[`EXECUTIVE_SUMMARY.md`](documents/EXECUTIVE_SUMMARY.md) v3.0.0**: the 93.4 score is withdrawn.
   - Status set to pre-alpha.
   - New risk register R1–R10, with the self-approval defect rated CRITICAL.
   - Roadmap re-baselined; directive added not to upload the 0.1.0 `dist/` artifacts.
-- **[`MARKET_AUDIT.md`](MARKET_AUDIT.md) v2.0.0**: market sizing re-sourced (≈ $0.4–0.5B in 2026, cited).
+- **[`MARKET_AUDIT.md`](documents/MARKET_AUDIT.md) v2.0.0**: market sizing re-sourced (≈ $0.4–0.5B in 2026, cited).
   - EU AI Act Digital Omnibus dates updated.
   - Competitor matrix updated (Microsoft Agent Governance Toolkit, hyperscaler controls, OWASP ASI Top 10).
 - **[`README.md`](README.md)**: status table and badges corrected.
   - Pre-alpha status; "Merkle" changed to "hash-chained"; self-assessed linter and badge labelled as such.
   - Added a charter-installation requirement, a pinned-key warning, the corrected roadmap, and links to the new reports.
-- Over-claims corrected in [`GOVERNANCE.md`](GOVERNANCE.md), [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md), [`USER_GUIDE.md`](USER_GUIDE.md), and [`PRD.md`](PRD.md).
-- Supersession notices added to [`AUDIT_REPORT.md`](AUDIT_REPORT.md) and [`CRITICAL_AUDIT.md`](CRITICAL_AUDIT.md).
+- Over-claims corrected in [`GOVERNANCE.md`](GOVERNANCE.md), [`DEVELOPER_GUIDE.md`](documents/DEVELOPER_GUIDE.md), [`USER_GUIDE.md`](documents/USER_GUIDE.md), and [`PRD.md`](documents/PRD.md).
+- Supersession notices added to [`AUDIT_REPORT.md`](documents/AUDIT_REPORT.md) and [`CRITICAL_AUDIT.md`](documents/CRITICAL_AUDIT.md).
 
 ### Security
 - P1/P2, P4/P5, P6, P15 and P18 are fixed (see **Fixed** above). The classifier is still a pattern matcher, not a sandbox: treat it as defence in depth.
@@ -155,10 +172,10 @@ Runtime hardening (P0 defects from the audit), the `init` installer, an agent pl
 
 ### Added
 - **360° Comprehensive Audit Suite:**
-  - **Critical Internal Audit ([`CRITICAL_AUDIT.md`](CRITICAL_AUDIT.md)):** Brutally honest gap analysis, specification vs. reality assessment (12/100 code maturity), bus-factor risk modeling, and prioritized infrastructure checklist.
-  - **Market Landscape Audit ([`MARKET_AUDIT.md`](MARKET_AUDIT.md)):** In-depth 2026 market analysis ($500M market, 45% CAGR), regulatory alignment with EU AI Act (90% aligned), NIST AASI (100% aligned), and OWASP Agentic Top 17 (59% covered).
-  - **Executive Scorecard ([`EXECUTIVE_SUMMARY.md`](EXECUTIVE_SUMMARY.md)):** Board-ready project health dashboard (71/100 composite), Top 10 Risk Register, and 4-phase strategic roadmap.
-  - **Interactive HTML Presentation ([`presentation.html`](presentation.html)):** 17-slide dark glassmorphism presentation deck with keyboard/touch navigation and embedded data visualizations.
+  - **Critical Internal Audit ([`CRITICAL_AUDIT.md`](documents/CRITICAL_AUDIT.md)):** Brutally honest gap analysis, specification vs. reality assessment (12/100 code maturity), bus-factor risk modeling, and prioritized infrastructure checklist.
+  - **Market Landscape Audit ([`MARKET_AUDIT.md`](documents/MARKET_AUDIT.md)):** In-depth 2026 market analysis ($500M market, 45% CAGR), regulatory alignment with EU AI Act (90% aligned), NIST AASI (100% aligned), and OWASP Agentic Top 17 (59% covered).
+  - **Executive Scorecard ([`EXECUTIVE_SUMMARY.md`](documents/EXECUTIVE_SUMMARY.md)):** Board-ready project health dashboard (71/100 composite), Top 10 Risk Register, and 4-phase strategic roadmap.
+  - **Interactive HTML Presentation ([`presentation.html`](documents/presentation.html)):** 17-slide dark glassmorphism presentation deck with keyboard/touch navigation and embedded data visualizations.
 - **Python SDK & CLI Runtime (`autonomous-governance` v0.1.0 Alpha):**
   - Production-ready `GovernanceKernel` package in `src/autonomous_governance/kernel.py` with 3-tier risk interceptor, emergency halt checks, and SHA-256 Merkle ledger chaining.
   - CLI executable `agy-governance` (`verify`, `audit-ledger`, `status`) in `src/autonomous_governance/cli.py`.

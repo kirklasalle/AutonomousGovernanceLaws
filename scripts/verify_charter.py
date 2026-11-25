@@ -13,7 +13,12 @@ Exit Code:  0 = All digests match | 1 = Integrity violation detected
 import hashlib
 import json
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+
+
+def _is_safe_rel(name: str) -> bool:
+    rel = PurePosixPath(name.replace("\\", "/"))
+    return bool(rel.parts) and not rel.is_absolute() and ".." not in rel.parts and ":" not in rel.parts[0]
 
 
 def compute_sha256(file_path: Path) -> str:
@@ -21,7 +26,6 @@ def compute_sha256(file_path: Path) -> str:
     with open(file_path, "rb") as f:
         content = f.read().replace(b"\r\n", b"\n")
     return hashlib.sha256(content).hexdigest()
-
 
 
 def verify_charter(repo_root: Path | None = None) -> bool:
@@ -48,13 +52,28 @@ def verify_charter(repo_root: Path | None = None) -> bool:
         print("     Runtime initialization MUST fail. (LAW10-CHARTER)")
         return False
 
-    # 2. Load manifest
-    with open(manifest_path, "r", encoding="utf-8") as f:
-        manifest = json.load(f)
+    # 2. Load and validate manifest
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+    except (OSError, ValueError) as exc:
+        print(f"  ❌ FATAL: Charter manifest unreadable: {exc}")
+        return False
 
-    algorithm = manifest.get("algorithm", "SHA-256")
+    if not isinstance(manifest, dict):
+        print("  ❌ FATAL: Charter manifest must be a JSON object")
+        return False
+
+    algorithm = str(manifest.get("algorithm", "SHA-256"))
+    if algorithm.upper() != "SHA-256":
+        print(f"  ❌ FATAL: Unsupported charter hash algorithm: {algorithm}")
+        return False
+
     version = manifest.get("version", "unknown")
-    charter_files = manifest.get("charter_files", {})
+    charter_files = manifest.get("charter_files")
+    if not isinstance(charter_files, dict) or not charter_files:
+        print("  ❌ FATAL: Charter manifest lists no charter files (LAW10-CHARTER)")
+        return False
 
     print(f"  Manifest Version:  {version}")
     print(f"  Hash Algorithm:    {algorithm}")
@@ -64,12 +83,16 @@ def verify_charter(repo_root: Path | None = None) -> bool:
     # 3. Verify each charter file
     all_passed = True
     for file_name, expected_hash in charter_files.items():
+        if not isinstance(file_name, str) or not _is_safe_rel(file_name):
+            print(f"  ❌ UNSAFE:   {file_name!r} is not a safe relative path")
+            all_passed = False
+            continue
         file_path = repo_root / file_name
-        expected_hash = expected_hash.lower()
+        expected_hash = str(expected_hash).lower()
 
-        if not file_path.exists():
+        if not file_path.is_file():
             print(f"  ❌ MISSING:  {file_name}")
-            print(f"              File does not exist!")
+            print("              File does not exist!")
             all_passed = False
             continue
 

@@ -217,3 +217,58 @@ def test_kernel_replay_protection_and_cryptographic_token(tmp_path):
     assert audit["valid"] is True
     ledger_text = ledger_file.read_text(encoding="utf-8")
     assert "TOKEN_REPLAY_DETECTED" in ledger_text
+
+
+def test_posix_v2_aead_and_legacy_v1_compatibility(monkeypatch):
+    import autonomous_governance.security as security
+
+    secret = b"\x22" * 32
+    # V2 AES-GCM (when cryptography available)
+    v2_blob = DPAPIKeyStore.protect_with_passphrase(secret, "pass-v2")
+    assert v2_blob.startswith(security.POSIX_ENCRYPTED_V2_MARKER)
+    assert DPAPIKeyStore.unprotect_with_passphrase(v2_blob, "pass-v2") == secret
+    with pytest.raises(ValueError, match="Invalid passphrase"):
+        DPAPIKeyStore.unprotect_with_passphrase(v2_blob, "wrong")
+
+    # V2 pure-Python HMAC-CTR mode
+    orig_aes = security._HAS_AESGCM
+    try:
+        monkeypatch.setattr(security, "_HAS_AESGCM", False)
+        v2_hmac = DPAPIKeyStore.protect_with_passphrase(secret, "pass-hmac")
+        assert v2_hmac.startswith(security.POSIX_ENCRYPTED_V2_MARKER + b"H")
+        assert DPAPIKeyStore.unprotect_with_passphrase(v2_hmac, "pass-hmac") == secret
+    finally:
+        monkeypatch.setattr(security, "_HAS_AESGCM", orig_aes)
+
+
+@pytest.mark.parametrize("accelerated", [False, True])
+def test_ed25519_small_order_and_mismatched_pub_rejected(monkeypatch, accelerated):
+    import autonomous_governance.security as security
+
+    if accelerated and not security._HAS_CRYPTOGRAPHY:
+        pytest.skip("optional cryptography backend is not installed")
+    monkeypatch.setattr(security, "_HAS_CRYPTOGRAPHY", accelerated)
+    seed, _ = generate_ed25519_keypair()
+    _, other_pub = generate_ed25519_keypair()
+    with pytest.raises(ValueError, match="does not match"):
+        ed25519_sign(seed, other_pub, b"msg")
+
+    identity_pt = bytes([1]) + bytes(31)
+    sig_zero = identity_pt + bytes(32)
+    assert security.is_small_order_point(identity_pt) is True
+    assert ed25519_verify(identity_pt, b"msg", sig_zero) is False
+
+
+def test_agl_v2_domain_scoped_tokens():
+    priv, pub = generate_ed25519_keypair()
+    payload = {"target_path": "app.py"}
+    tok_v2 = create_approval_token("act-v2-1", "write_file", payload, priv, pub, scope="repo-alpha")
+    assert tok_v2["version"] == "AGL-V2"
+    assert tok_v2["scope"] == "repo-alpha"
+
+    assert verify_approval_token(tok_v2, "write_file", payload, pub, expected_scope="repo-alpha")[0] is True
+    ok, reason = verify_approval_token(tok_v2, "write_file", payload, pub, expected_scope="repo-beta")
+    assert ok is False and "scope mismatch" in reason
+
+    tok_v1 = create_approval_token("act-v1-1", "write_file", payload, priv, pub)
+    assert verify_approval_token(tok_v1, "write_file", payload, pub, require_v2=True)[0] is False

@@ -72,3 +72,15 @@ def test_audit_repository_compliance_halt(tmp_path):
     assert audit["status"] == "HALTED"
     assert audit["score"] == 0
     assert audit["color"] == "#ef4444"
+
+
+def test_render_svg_badge_escapes_xml_and_validates_color():
+    svg = render_svg_badge(
+        label='<script>alert("1")</script>',
+        message="100% & 'safe'",
+        color='red" onload="alert(1)',
+    )
+    assert "<script>" not in svg
+    assert "&lt;script&gt;" in svg
+    assert "onload" not in svg
+    assert "#64748b" in svg

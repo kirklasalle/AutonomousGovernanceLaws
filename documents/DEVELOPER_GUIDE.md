@@ -116,8 +116,8 @@ agy-governance --ledger C:\Projects\MyAgent\.ledger\events.jsonl audit-ledger
 Install steps and the comparison with copying documents are in
 [INSTALLATION_METHODS_REPORT](INSTALLATION_METHODS_REPORT.md).
 
-The host runs the wrapper, which starts [agl_hook.py](hooks/agl_hook.py) and the
-[adapter](src/autonomous_governance/hooks.py). Python 3.10+ is required;
+The host runs the wrapper, which starts [agl_hook.py](../hooks/agl_hook.py) and the
+[adapter](../src/autonomous_governance/hooks.py). Python 3.10+ is required;
 `AGL_PYTHON` selects it. Copilot CLI on Windows additionally requires PowerShell 7
 (`pwsh`); a successful Windows PowerShell 5.1 wrapper test does not prove that
 the host can launch its required shell.
@@ -162,15 +162,15 @@ collection on Python 3.10.0. That runner failure is not a passing product test.
 
 | Test surface | Scope |
 |---|---|
-| [test_kernel.py](tests/test_kernel.py) | Charter, halt, approval, classifier, ledger |
-| [test_hardening.py](tests/test_hardening.py) | P0 regressions, restart/replay, threads/processes, DPAPI, identifier ambiguity |
-| [test_init.py](tests/test_init.py) | Exact copies, conflicts, loader parity, quoted YAML scalars, package manifest |
-| [test_plugin_hooks.py](tests/test_plugin_hooks.py) | Host payloads, emitted decisions, process wrappers, command/path variants, caps/watchdog |
-| [test_security.py](tests/test_security.py) | Both Ed25519 backends, RFC vector, DPAPI, binding/expiry/replay |
-| [test_linter.py](tests/test_linter.py), [test_badge.py](tests/test_badge.py) | Heuristic scanner and presentation, not legal compliance |
+| [test_kernel.py](../tests/test_kernel.py) | Charter, halt, approval, classifier, ledger |
+| [test_hardening.py](../tests/test_hardening.py) | P0 regressions, restart/replay, threads/processes, DPAPI, identifier ambiguity |
+| [test_init.py](../tests/test_init.py) | Exact copies, conflicts, loader parity, quoted YAML scalars, package manifest |
+| [test_plugin_hooks.py](../tests/test_plugin_hooks.py) | Host payloads, emitted decisions, process wrappers, command/path variants, caps/watchdog |
+| [test_security.py](../tests/test_security.py) | Both Ed25519 backends, RFC vector, DPAPI, binding/expiry/replay |
+| [test_linter.py](../tests/test_linter.py), [test_badge.py](../tests/test_badge.py) | Heuristic scanner and presentation, not legal compliance |
 
 Exact test counts, skips, coverage, distributions and code hashes are retained in
-[audit evidence](audit/evidence-2026-11.json). CI currently runs Ubuntu/Python
+[audit evidence](../audit/evidence-2026-11.json). CI currently runs Ubuntu/Python
 3.10-3.13 tests and charter checks, with no minimum coverage, SAST or type-check
 gate. The linter exempts the kernel and tests and has noncanonical law labels.
 
@@ -180,5 +180,5 @@ CAC delegation/context inheritance, diagnostic fallback, signed configuration,
 policy-as-code, a TypeScript runtime, framework-native adapters, an OS sandbox,
 signed ledger checkpoints, HSM integration and post-quantum signatures remain
 design goals. Do not copy illustrative implementations from historical reports
-as substitutes. The [governance matrix](GOVERNANCE.md) and
+as substitutes. The [governance matrix](../GOVERNANCE.md) and
 [engineering audit](WORLD_CLASS_AUDIT_2026-11.md) separate controls from goals.

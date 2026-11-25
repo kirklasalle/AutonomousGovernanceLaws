@@ -11,7 +11,7 @@
 > and Precedence body figures, and the principal competitor references were
 > re-fetched through the local standalone `.mcp` server. Microsoft AGT's current
 > README was also checked via GitHub API. The
-> [committed evidence](audit/evidence-2026-11.json) distinguishes retrieved pages,
+> [committed evidence](../audit/evidence-2026-11.json) distinguishes retrieved pages,
 > rate limits and errors. AGL now has 213 collected tests, 83.13% line / 77.44%
 > branch coverage on Windows Python 3.10, and verified real wheel/sdist installs.
 > Final-build live-host qualification is still open; earlier live and Linux
@@ -200,9 +200,9 @@ Standalone guardrail vendors are being absorbed into security and vertical platf
 
 ### 5.1 Genuine differentiators (verified in code)
 
-1. **Content-addressed constitutional charter.** Three governing documents are pinned by LF-normalised SHA-256 in [`config/charter_manifest.json`](config/charter_manifest.json) and verified at kernel boot and in CI. This specific integration is a positioning hypothesis, not proof of exclusivity; Microsoft AGT also has a project charter, which is not by itself equivalent runtime pinning.
+1. **Content-addressed constitutional charter.** Three governing documents are pinned by LF-normalised SHA-256 in [`config/charter_manifest.json`](../config/charter_manifest.json) and verified at kernel boot and in CI. This specific integration is a positioning hypothesis, not proof of exclusivity; Microsoft AGT also has a project charter, which is not by itself equivalent runtime pinning.
 2. **Payload-bound, expiring, single-use Ed25519 approvals (AGL-V1).** The signature covers the tool name and a canonical payload digest, so what the operator signs is exactly what executes. This mitigates OWASP ASI09 (human-agent trust exploitation). Tokens verify only against a pinned operator key; without one, every elevated action is refused (fixed 2026-11-01, P1/P2).
-3. **Zero required runtime dependencies, offline operation.** A separate no-dependency wheel environment passed installation and boot checks. Optional accelerated cryptography and developer tooling add dependencies. Exact file/line counts are in the [catalogue](audit/evidence-2026-11.json); small size is not a security guarantee.
+3. **Zero required runtime dependencies, offline operation.** A separate no-dependency wheel environment passed installation and boot checks. Optional accelerated cryptography and developer tooling add dependencies. Exact file/line counts are in the [catalogue](../audit/evidence-2026-11.json); small size is not a security guarantee.
 4. **Sub-millisecond kernel overhead.** Measured at 0.49 ms (SAFE) and 0.71 ms (signed ELEVATED) before the ledger lock was added; not yet re-benchmarked. Through the agent plugin, each host tool call costs about 0.75 s on Windows, mostly Python start-up.
 5. **The same pinned charter governs coding agents (new).** The agent plugin runs the kernel in the host's pre-tool hook. It denies destructive commands and edits to governance state, asks before other changes, and ledgers every decision. Hook-based interception is itself a standard host feature, so the distinctive part is the pinned charter and the shared ledger, not the hook.
 
@@ -273,7 +273,7 @@ externally anchored, and the plugin's host prompts are not signed approvals.
 
 ## 8. SOURCES & VERIFICATION
 
-The fresh retained source register is in [audit/evidence-2026-11.json](audit/evidence-2026-11.json).
+The fresh retained source register is in [audit/evidence-2026-11.json](../audit/evidence-2026-11.json).
 Success means retrieval, not proof of every table cell. The 55-URL/51-success
 numbers below describe the **earlier pass**, whose full raw register was
 session-local. They are not new verification counts.

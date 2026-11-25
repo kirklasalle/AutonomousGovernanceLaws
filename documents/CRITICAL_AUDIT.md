@@ -234,7 +234,7 @@ These are minor textual variations, but they directly undermine the framework's 
 
 ### 5.3. Reference Integrity Issues
 
-- `AGENTIC_SACRED_COVENANT.md` (Line 143) references `[GOVERNANCE.md](GOVERNANCE.md)` — this file does not exist in the repository.
+- `AGENTIC_SACRED_COVENANT.md` (Line 143) references `[GOVERNANCE.md](../GOVERNANCE.md)` — this file does not exist in the repository.
 - `AGENTIC_SACRED_COVENANT.md` (Line 15) references `.github/PRISM_SACRED_COVENANT.md` — this file is not present.
 - The `README.md` Quick Start section references `config/charter_manifest.json` — this file does not exist.
 - The Developer Guide references `config/policy_registry.json` — this file does not exist.
